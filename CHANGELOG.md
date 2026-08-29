@@ -3,15 +3,25 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '6712670f-c95a-4b43-ad00-89be91095474'
-  PropagateID: '6712670f-c95a-4b43-ad00-89be91095474'
-  ReservedCode1: '239218d3-0c50-4242-ad27-9275710eedae'
-  ReservedCode2: '239218d3-0c50-4242-ad27-9275710eedae'
+  ProduceID: 'd5212965-73c6-415c-8a67-1b5a2927013b'
+  PropagateID: 'd5212965-73c6-415c-8a67-1b5a2927013b'
+  ReservedCode1: '71a900a7-28b5-454b-909c-cebe9010eb8e'
+  ReservedCode2: '71a900a7-28b5-454b-909c-cebe9010eb8e'
 ---
 
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.1.3] — 2026-08-29
+
+### Features
+- **i18n 国际化**：右上角新增语言切换图标，支持中文/英文；默认根据浏览器/OS 语言自动检测
+- **亮暗主题**：右上角新增主题切换图标，支持亮色/暗色两种主题；默认亮色，偏好保存在 localStorage
+- 所有 UI 文本通过 `data-i18n` 属性 + `t()` 函数驱动，切换语言即时生效
+- 暗色模式覆盖全部界面元素（对话气泡、抽屉、输入区、markdown 内容等）
 
 ---
 
