@@ -113,6 +113,12 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Build frontend for Tauri
+        working-directory: frontend
+        env:
+          TAURI_ENV_PLATFORM: desktop
+        run: npm run build
+
       - name: Build Tauri app
         working-directory: crates/tauri-app
         run: npx @tauri-apps/cli build --target ${{ matrix.target }}
