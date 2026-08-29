@@ -31,7 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build (debug, unstripped)
+      - name: Setup Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build (release)
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Rename binary
@@ -67,14 +70,13 @@ jobs:
           npm run build
 
       - name: Zip frontend
-        working-directory: frontend
-        run: zip -r frontend-dist.zip dist/
+        run: cd crates/http-server/static && zip -r ../../../frontend-dist.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/dist/
+          path: frontend-dist.zip
 
   # ────────────────── 发布 Release ──────────────────
   release:
@@ -90,12 +92,8 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Zip frontend
-        working-directory: artifacts
-        run: zip -r frontend-dist.zip frontend-dist/
-
       - name: List artifacts
-        run: ls -lh artifacts/
+        run: ls -lhR artifacts/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
