@@ -408,14 +408,50 @@ function renderMessage(m) {
 
   wrapper.appendChild(bubble);
 
-  if (m.duration_ms || m.tokens || m.model_name) {
+  if (m.duration_ms || m.tokens || m.model_name || m.prefill_ms || m.decode_ms) {
     const meta = document.createElement('div');
-    meta.className = `flex gap-3 text-[11px] text-gray-400 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`;
-    let metaHtml = '';
-    if (m.duration_ms) metaHtml += `<span><i class="fas fa-clock mr-0.5"></i>${formatDuration(m.duration_ms)}</span>`;
-    if (m.tokens) metaHtml += `<span><i class="fas fa-coins mr-0.5"></i>${m.tokens} tokens</span>`;
-    if (m.model_name) metaHtml += `<span><i class="fas fa-microchip mr-0.5"></i>${escapeHtml(m.model_name)}</span>`;
-    meta.innerHTML = metaHtml;
+    meta.className = `text-[11px] text-gray-400 mt-1 flex flex-col gap-0.5 ${isUser ? 'items-end' : 'items-start'}`;
+
+    // Line 1: prefill / decode breakdown
+    if (m.prefill_ms || m.decode_ms) {
+      let line1 = '<div class="flex gap-3">';
+      if (m.prefill_ms) {
+        line1 += `<span><i class="fas fa-arrow-down mr-0.5"></i>prefill ${formatDuration(m.prefill_ms)}`;
+        if (m.prompt_tokens) line1 += ` · ${m.prompt_tokens} tok`;
+        if (m.prefill_ms > 0) line1 += ` · ${formatTps(m.prompt_tokens, m.prefill_ms)}`;
+        line1 += '</span>';
+      }
+      if (m.decode_ms) {
+        line1 += `<span><i class="fas fa-arrow-up mr-0.5"></i>decode ${formatDuration(m.decode_ms)}`;
+        if (m.completion_tokens) line1 += ` · ${m.completion_tokens} tok`;
+        if (m.decode_ms > 0) line1 += ` · ${formatTps(m.completion_tokens, m.decode_ms)}`;
+        line1 += '</span>';
+      }
+      line1 += '</div>';
+      meta.insertAdjacentHTML('beforeend', line1);
+    } else if (m.duration_ms) {
+      // Fallback: old-style single duration (error messages, legacy data)
+      const total = m.duration_ms;
+      let line1 = '<div class="flex gap-3">';
+      line1 += `<span><i class="fas fa-clock mr-0.5"></i>${formatDuration(total)}</span>`;
+      if (m.tokens) line1 += `<span><i class="fas fa-coins mr-0.5"></i>${m.tokens} tokens</span>`;
+      line1 += '</div>';
+      meta.insertAdjacentHTML('beforeend', line1);
+    }
+
+    // Line 2: total + model name
+    if (m.model_name || (m.duration_ms && (m.prefill_ms || m.decode_ms))) {
+      let line2 = '<div class="flex gap-3">';
+      if (m.prefill_ms && m.decode_ms) {
+        line2 += `<span><i class="fas fa-clock mr-0.5"></i>total ${formatDuration(m.duration_ms)}</span>`;
+      }
+      if (m.model_name) {
+        line2 += `<span><i class="fas fa-microchip mr-0.5"></i>${escapeHtml(m.model_name)}</span>`;
+      }
+      line2 += '</div>';
+      meta.insertAdjacentHTML('beforeend', line2);
+    }
+
     wrapper.appendChild(meta);
   }
 
@@ -688,14 +724,17 @@ async function sendMessage() {
 
     const startTime2 = performance.now();
     const response = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) });
-    const elapsed = performance.now() - startTime2;
+    const ttfb = performance.now() - startTime2;  // time to first byte (≈ prefill)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }));
       throw new Error(`API ${response.status}: ${errorData?.error?.message || response.statusText}`);
     }
 
+    const bodyStart = performance.now();
     const respData = await response.json();
+    const bodyMs = performance.now() - bodyStart;  // body download + parse (≈ decode)
+    const elapsed = ttfb + bodyMs;
     let content;
 
     if (claude || isMessagesEndpoint) {
@@ -724,7 +763,11 @@ async function sendMessage() {
     const meta = {
       duration_ms: elapsed,
       tokens: respData.usage?.total_tokens || respData.usage?.output_tokens || null,
-      model_name: respData.model || data.model
+      model_name: respData.model || data.model,
+      prompt_tokens: respData.usage?.prompt_tokens || respData.usage?.input_tokens || respData.usageMetadata?.promptTokenCount || null,
+      completion_tokens: respData.usage?.completion_tokens || respData.usage?.output_tokens || respData.usageMetadata?.candidatesTokenCount || null,
+      prefill_ms: ttfb,
+      decode_ms: bodyMs,
     };
 
     await api(`api/conversations/${currentConvId}`, {
@@ -740,7 +783,11 @@ async function sendMessage() {
         content,
         duration_ms: meta.duration_ms,
         tokens: meta.tokens,
-        model_name: meta.model_name
+        model_name: meta.model_name,
+        prompt_tokens: meta.prompt_tokens,
+        completion_tokens: meta.completion_tokens,
+        prefill_ms: meta.prefill_ms,
+        decode_ms: meta.decode_ms,
       })
     });
 
@@ -810,6 +857,13 @@ function autoResize(ta) {
 function formatDuration(ms) {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function formatTps(tokens, ms) {
+  if (!tokens || !ms || ms <= 0) return '';
+  const tps = tokens / (ms / 1000);
+  if (tps >= 100) return `${tps.toFixed(0)} tok/s`;
+  return `${tps.toFixed(1)} tok/s`;
 }
 
 function escapeHtml(text) {

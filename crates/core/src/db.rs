@@ -55,6 +55,10 @@ impl Database {
                 duration_ms REAL,
                 tokens INTEGER,
                 model_name TEXT,
+                prompt_tokens INTEGER,
+                completion_tokens INTEGER,
+                prefill_ms REAL,
+                decode_ms REAL,
                 created_at TEXT DEFAULT (datetime('now')),
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
             );
@@ -89,6 +93,23 @@ impl Database {
             .collect();
         if !conv_cols.iter().any(|c| c == "last_config") {
             conn.execute("ALTER TABLE conversations ADD COLUMN last_config TEXT", [])?;
+        }
+
+        // Add v0.3.0 columns to messages if missing
+        let msg_cols: Vec<String> = conn
+            .prepare("PRAGMA table_info(messages)")?
+            .query_map([], |row| row.get::<_, String>(1))?
+            .filter_map(|r| r.ok())
+            .collect();
+        for (col, ty) in [
+            ("prompt_tokens", "INTEGER"),
+            ("completion_tokens", "INTEGER"),
+            ("prefill_ms", "REAL"),
+            ("decode_ms", "REAL"),
+        ] {
+            if !msg_cols.iter().any(|c| c == col) {
+                conn.execute(&format!("ALTER TABLE messages ADD COLUMN {} {}", col, ty), [])?;
+            }
         }
         Ok(())
     }
@@ -294,7 +315,8 @@ impl Database {
     pub fn list_messages(&self, conversation_id: i64) -> rusqlite::Result<Vec<Message>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, conversation_id, role, content, is_error, duration_ms, tokens, model_name, created_at
+            "SELECT id, conversation_id, role, content, is_error, duration_ms, tokens, model_name,
+                    prompt_tokens, completion_tokens, prefill_ms, decode_ms, created_at
              FROM messages WHERE conversation_id = ? ORDER BY created_at ASC"
         )?;
         let mut messages: Vec<Message> = Vec::new();
@@ -308,7 +330,11 @@ impl Database {
                 duration_ms: row.get(5)?,
                 tokens: row.get(6)?,
                 model_name: row.get(7)?,
-                created_at: row.get(8)?,
+                prompt_tokens: row.get(8)?,
+                completion_tokens: row.get(9)?,
+                prefill_ms: row.get(10)?,
+                decode_ms: row.get(11)?,
+                created_at: row.get(12)?,
                 images: None,
             })
         })?;
@@ -342,8 +368,9 @@ impl Database {
         };
 
         conn.execute(
-            "INSERT INTO messages (conversation_id, role, content, is_error, duration_ms, tokens, model_name)
-             VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO messages (conversation_id, role, content, is_error, duration_ms, tokens, model_name,
+                                  prompt_tokens, completion_tokens, prefill_ms, decode_ms)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             params![
                 data.conversation_id,
                 data.role,
@@ -352,6 +379,10 @@ impl Database {
                 data.duration_ms,
                 data.tokens,
                 data.model_name,
+                data.prompt_tokens,
+                data.completion_tokens,
+                data.prefill_ms,
+                data.decode_ms,
             ],
         )?;
         let msg_id = conn.last_insert_rowid();

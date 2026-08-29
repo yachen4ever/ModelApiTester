@@ -2009,7 +2009,7 @@ dependencies = [
 
 [[package]]
 name = "mat-core"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "rusqlite",
  "serde",
@@ -2018,7 +2018,7 @@ dependencies = [
 
 [[package]]
 name = "mat-http-server"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "axum",
  "mat-core",
@@ -2032,7 +2032,7 @@ dependencies = [
 
 [[package]]
 name = "mat-tauri-app"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "dirs-next",
  "mat-core",

@@ -45,6 +45,10 @@ pub struct Message {
     pub duration_ms: Option<f64>,
     pub tokens: Option<i64>,
     pub model_name: Option<String>,
+    pub prompt_tokens: Option<i64>,
+    pub completion_tokens: Option<i64>,
+    pub prefill_ms: Option<f64>,
+    pub decode_ms: Option<f64>,
     pub created_at: Option<String>,
     pub images: Option<Vec<String>>,  // base64 data URLs (joined from message_images)
 }
@@ -105,6 +109,10 @@ pub struct CreateMessage {
     pub duration_ms: Option<f64>,
     pub tokens: Option<i64>,
     pub model_name: Option<String>,
+    pub prompt_tokens: Option<i64>,
+    pub completion_tokens: Option<i64>,
+    pub prefill_ms: Option<f64>,
+    pub decode_ms: Option<f64>,
     pub images: Option<Vec<String>>,
 }
 
