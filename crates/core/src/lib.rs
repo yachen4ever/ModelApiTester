@@ -4,4 +4,4 @@ pub mod models;
 pub use db::Database;
 pub use models::*;
 
-pub const VERSION: &str = "0.2.0";
+pub const VERSION: &str = "0.2.1";

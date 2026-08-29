@@ -152,6 +152,19 @@ async function loadConversation(id) {
   await loadConversations();
 }
 
+async function clearAllConversations() {
+  if (!confirm(t(currentLang, 'clear_all_confirm'))) return;
+  const convs = await api('api/conversations');
+  for (const c of convs) {
+    await api(`api/conversations/${c.id}`, { method: 'DELETE' });
+  }
+  currentConvId = null;
+  document.getElementById('chatHistory').innerHTML = '';
+  document.getElementById('currentConvTitle').textContent = '';
+  await loadConversations();
+  await newConversation();
+}
+
 async function deleteConversation(id) {
   if (!confirm(t(currentLang, 'delete_confirm'))) return;
   await api(`api/conversations/${id}`, { method: 'DELETE' });
@@ -870,7 +883,7 @@ function renderApp() {
       </button>
       <h1 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
         <i class="fas fa-robot text-indigo-500"></i> Model API Tester
-        <span class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">v0.2.0</span>
+        <span class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">v0.2.1</span>
       </h1>
       <span id="currentConvTitle" class="text-xs text-gray-400 ml-2 truncate"></span>
       <button id="langBtn" class="ml-auto p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition text-xs font-medium" data-i18n-title="switch_lang" title="切换语言">
@@ -896,6 +909,9 @@ function renderApp() {
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400" data-i18n="conversation_list">对话列表</span>
           <button id="newConvBtn" class="text-xs text-indigo-500 hover:text-indigo-600 font-medium">
             <i class="fas fa-plus mr-0.5"></i><span data-i18n="new_conversation">新建</span>
+          </button>
+          <button id="clearAllBtn" class="text-xs text-red-400 hover:text-red-600 font-medium">
+            <i class="fas fa-trash-alt mr-0.5"></i><span data-i18n="clear_all">清空</span>
           </button>
         </div>
         <div id="conversationList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
@@ -1040,6 +1056,7 @@ function bindEvents() {
   document.getElementById('langBtn').onclick = toggleLang;
   document.getElementById('themeBtn').onclick = toggleTheme;
   document.getElementById('newConvBtn').onclick = newConversation;
+  document.getElementById('clearAllBtn').onclick = clearAllConversations;
   document.getElementById('clearBtn').onclick = clearCurrentChat;
   document.getElementById('saveConfigBtn').onclick = saveCurrentConfig;
   document.getElementById('advBtn').onclick = toggleAdvanced;
