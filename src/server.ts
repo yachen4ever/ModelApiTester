@@ -105,7 +105,7 @@ export default {
 
     // --- 健康检查 ---
     if (path === "/api/health" && method === "GET") {
-      return json({ status: "ok", version: "0.1.1" }, 200, corsHeaders);
+      return json({ status: "ok", version: "0.1.2" }, 200, corsHeaders);
     }
 
     // ============================ 静态文件 ============================
