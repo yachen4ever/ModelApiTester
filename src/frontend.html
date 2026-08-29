@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Model API Tester</title>
+  <title>Model API Tester v0.1.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -67,6 +67,7 @@
     </button>
     <h1 class="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
       <i class="fas fa-robot text-brand-500"></i> Model API Tester
+      <span class="text-[10px] font-medium text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">v0.1.1</span>
     </h1>
     <span id="currentConvTitle" class="text-xs text-gray-400 ml-2 truncate"></span>
     <!-- 右抽屉切换 -->
@@ -106,12 +107,12 @@
       <div class="bg-white border-t border-gray-200 px-4 py-2.5 shrink-0">
         <div id="attachmentPreviewArea" class="flex gap-2 flex-wrap mb-2 empty:hidden"></div>
         <div class="flex gap-2 items-center">
-          <button onclick="document.getElementById('fileInput').click()" class="w-10 h-10 shrink-0 border border-gray-300 rounded-lg flex items-center justify-center text-gray-400 hover:border-brand-500 hover:text-brand-500 transition" title="上传图片或文件">
-            <i class="fas fa-paperclip"></i>
-          </button>
           <textarea id="input" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"
             class="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg resize-none outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 min-h-[42px] max-h-120"
             onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+          <button onclick="document.getElementById('fileInput').click()" class="w-10 h-10 shrink-0 border border-gray-300 rounded-lg flex items-center justify-center text-gray-400 hover:border-brand-500 hover:text-brand-500 transition" title="上传图片或文件">
+            <i class="fas fa-paperclip"></i>
+          </button>
           <button id="sendBtn" onclick="sendMessage()" class="w-10 h-10 shrink-0 bg-brand-500 text-white rounded-lg flex items-center justify-center hover:bg-brand-600 transition" title="发送">
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -123,7 +124,7 @@
             <label class="flex items-center gap-1.5 cursor-pointer select-none" title="开启后发送历史上下文">
               <span>上下文</span>
               <span class="relative inline-block w-9 h-5">
-                <input type="checkbox" id="contextToggle" checked class="sr-only peer">
+                <input type="checkbox" id="contextToggle" class="sr-only peer">
                 <span class="toggle-bg peer-checked:bg-brand-500 block w-9 h-5 bg-gray-300 rounded-full relative">
                   <span class="toggle-dot absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></span>
                 </span>
@@ -149,14 +150,35 @@
           <label class="text-xs font-semibold text-gray-600 block mb-1">API Key</label>
           <input type="text" id="key" placeholder="sk-..." class="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
         </div>
+        <!-- 模型：独立一行，点击拉取列表，可手动输入，实时筛选 -->
+        <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">模型</label>
+          <div class="relative">
+            <input type="text" id="model" placeholder="gpt-4o" autocomplete="off"
+              class="w-full px-2.5 py-1.5 pr-8 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
+              onfocus="showModelSuggestionsOnFocus()" oninput="filterModelSuggestions(this.value)">
+            <button onclick="fetchModels()" title="从接口拉取模型列表" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-brand-500 transition">
+              <i class="fas fa-sync-alt text-xs" id="modelRefreshIcon"></i>
+            </button>
+            <div id="modelSuggest" class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto"></div>
+          </div>
+        </div>
+        <!-- 路径 + API 类型 -->
         <div class="flex gap-2">
-          <div class="flex-1">
-            <label class="text-xs font-semibold text-gray-600 block mb-1">模型</label>
-            <input type="text" id="model" placeholder="gpt-4o" class="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+          <div class="w-1/3">
+            <label class="text-xs font-semibold text-gray-600 block mb-1">API 类型</label>
+            <select id="apiType" onchange="onApiTypeChange()" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md outline-none focus:border-brand-500 bg-white">
+              <option value="openai">openai</option>
+              <option value="anthropic">anthropic</option>
+              <option value="google">google</option>
+              <option value="other">其他主流</option>
+            </select>
           </div>
           <div class="flex-1">
             <label class="text-xs font-semibold text-gray-600 block mb-1">路径</label>
-            <input type="text" id="endpoint" value="auto" placeholder="auto" class="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+            <select id="endpoint" onchange="onEndpointChange()" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md outline-none focus:border-brand-500 bg-white">
+              <option value="">auto（自动）</option>
+            </select>
           </div>
         </div>
         <div>
@@ -304,7 +326,7 @@ async function newConversation() {
   });
   currentConvId = conv.id;
   document.getElementById('chatHistory').innerHTML = '';
-  document.getElementById('contextToggle').checked = true;
+  document.getElementById('contextToggle').checked = false;
   document.getElementById('currentConvTitle').textContent = conv.title;
   await loadConversations();
 }
@@ -376,7 +398,18 @@ function applyConfig(c) {
   document.getElementById('url').value = c.base_url || '';
   document.getElementById('key').value = c.api_key || '';
   document.getElementById('model').value = c.model || '';
-  document.getElementById('endpoint').value = c.endpoint || 'auto';
+  const apiType = c.api_type || detectApiType(c.base_url, c.model, c.endpoint);
+  document.getElementById('apiType').value = apiType;
+  updateEndpointOptions();
+  // endpoint：空 = auto；兼容旧数据中的 "auto"
+  const ep = (c.endpoint === 'auto' || !c.endpoint) ? '' : c.endpoint;
+  const epSel = document.getElementById('endpoint');
+  if (![...epSel.options].some(o => o.value === ep)) {
+    const opt = document.createElement('option');
+    opt.value = ep; opt.textContent = ep;
+    epSel.appendChild(opt);
+  }
+  epSel.value = ep;
   document.getElementById('systemPrompt').value = c.system_prompt || '';
   document.getElementById('temperature').value = c.temperature ?? 1;
   document.getElementById('max_tokens').value = c.max_tokens ?? 4096;
@@ -386,6 +419,126 @@ function applyConfig(c) {
   const hint = document.getElementById('savedModelHint');
   hint.textContent = `已加载: ${c.name} (${c.model})`;
   hint.classList.remove('hidden');
+}
+
+function detectApiType(baseUrl, model, endpoint) {
+  const u = (baseUrl || '').toLowerCase();
+  const m = (model || '').toLowerCase();
+  const ep = (endpoint || '').toLowerCase();
+  if (u.includes('anthropic') || m.includes('claude') || ep.includes('/v1/messages')) return 'anthropic';
+  if (u.includes('googleapis') || u.includes('generativelanguage') || m.includes('gemini')) return 'google';
+  return 'openai';
+}
+
+// API 类型候选路径
+const ENDPOINT_PRESETS = {
+  openai:    ['', '/v1/chat/completions', '/v1/responses', '/v1/completions', '/v1/embeddings', '/v1/models'],
+  anthropic: ['', '/v1/messages', '/v1/complete', '/v1/models'],
+  google:    ['', '/v1beta/models/{model}:generateContent', '/v1beta/models/{model}:streamGenerateContent', '/v1/models'],
+  other:     ['', '/v1/chat/completions', '/v1/messages'],
+};
+
+function updateEndpointOptions() {
+  const type = document.getElementById('apiType').value;
+  const sel = document.getElementById('endpoint');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  ENDPOINT_PRESETS[type].forEach(ep => {
+    const opt = document.createElement('option');
+    opt.value = ep;
+    opt.textContent = ep ? ep : 'auto（自动）';
+    sel.appendChild(opt);
+  });
+  // 尝试保留原值（如果新类型也有这个路径）
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+function onApiTypeChange() {
+  updateEndpointOptions();
+}
+
+function onEndpointChange() {
+  // 路径为空表示自动，无需额外处理
+}
+
+// ============================================================
+// 模型列表拉取与筛选
+// ============================================================
+async function fetchModels() {
+  const baseUrl = document.getElementById('url').value.trim();
+  const apiKey = document.getElementById('key').value.trim();
+  const apiType = document.getElementById('apiType').value;
+  const icon = document.getElementById('modelRefreshIcon');
+  icon.classList.add('spin');
+  try {
+    if (!baseUrl) { alert('请先填写 Base URL'); return; }
+    let url = baseUrl.replace(/\/+$/, '');
+    let headers = { 'Content-Type': 'application/json' };
+    if (apiType === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      if (url.endsWith('/v1')) url = url.replace(/\/v1$/, '');
+      url += '/v1/models';
+    } else if (apiType === 'google') {
+      if (url.endsWith('/v1beta')) url = url;
+      else if (url.endsWith('/v1')) url = url.replace(/\/v1$/, '/v1beta');
+      url += '/v1beta/models';
+    } else {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      if (url.endsWith('/v1')) url += '/models';
+      else url += '/v1/models';
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${err.slice(0, 120)}`);
+    }
+    const data = await res.json();
+    // 解析模型列表（兼容多种格式）
+    let models = [];
+    if (Array.isArray(data)) models = data;
+    else if (data.data && Array.isArray(data.data)) models = data.data;
+    else if (data.models && Array.isArray(data.models)) models = data.models;
+    else if (data.list && Array.isArray(data.list)) models = data.list;
+    models = models.map(m => typeof m === 'string' ? m : (m.id || m.name || '')).filter(Boolean);
+    if (models.length === 0) { alert('接口未返回模型列表'); return; }
+    showModelSuggestions(models);
+  } catch (e) {
+    alert(`拉取模型列表失败: ${e.message}`);
+  } finally {
+    icon.classList.remove('spin');
+  }
+}
+
+let modelListCache = [];
+
+function showModelSuggestions(models) {
+  const box = document.getElementById('modelSuggest');
+  if (models && Array.isArray(models)) modelListCache = models;
+  if (modelListCache.length === 0) return;
+  const input = document.getElementById('model').value.trim().toLowerCase();
+  const filtered = modelListCache.filter(m => !input || m.toLowerCase().includes(input)).slice(0, 50);
+  if (filtered.length === 0) { box.classList.add('hidden'); return; }
+  box.innerHTML = '';
+  filtered.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'px-2.5 py-1.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 cursor-pointer truncate';
+    div.textContent = m;
+    div.onmousedown = (e) => { e.preventDefault(); document.getElementById('model').value = m; box.classList.add('hidden'); };
+    box.appendChild(div);
+  });
+  box.classList.remove('hidden');
+}
+
+function filterModelSuggestions(value) {
+  if (modelListCache.length === 0) return;
+  showModelSuggestions(modelListCache);
+}
+
+// 点击输入框时若已有缓存则展示，否则自动拉取
+async function showModelSuggestionsOnFocus() {
+  if (modelListCache.length > 0) { showModelSuggestions(modelListCache); return; }
+  await fetchModels();
 }
 
 async function saveCurrentConfig() {
@@ -560,7 +713,8 @@ function getFormData() {
     base_url: document.getElementById('url').value.trim(),
     api_key: document.getElementById('key').value.trim(),
     model: document.getElementById('model').value.trim(),
-    endpoint: document.getElementById('endpoint').value.trim() || 'auto',
+    endpoint: document.getElementById('endpoint').value.trim() || '',
+    api_type: document.getElementById('apiType').value,
     system_prompt: document.getElementById('systemPrompt').value.trim(),
     temperature: parseFloat(document.getElementById('temperature').value) || 1,
     max_tokens: parseInt(document.getElementById('max_tokens').value) || 4096,
@@ -569,15 +723,25 @@ function getFormData() {
   };
 }
 
-function getApiUrl(baseUrl, endpoint, model) {
+function getApiUrl(baseUrl, endpoint, model, apiType) {
   let cleanUrl = baseUrl.trim().replace(/\/+$/, '');
-  if (endpoint === 'auto') {
-    const isClaude = model.toLowerCase().includes('claude');
-    const path = isClaude ? 'v1/messages' : 'v1/chat/completions';
+  if (!endpoint || endpoint === 'auto') {
+    const type = (apiType || detectApiType(baseUrl, model, '')).toLowerCase();
+    let path;
+    if (type === 'anthropic') path = 'v1/messages';
+    else if (type === 'google') path = 'v1beta/models/{model}:generateContent';
+    else path = 'v1/chat/completions';
+    // 避免 /v1/v1 重复
     if (cleanUrl.endsWith('/v1')) return `${cleanUrl}/${path.substring(3)}`;
+    if (cleanUrl.endsWith('/v1beta') && path.startsWith('v1beta')) return `${cleanUrl}/${path.substring(6)}`;
     return `${cleanUrl}/${path}`;
   }
+  // 显式路径（含 google 的 {model} 占位符替换）
+  if (endpoint.includes('{model}')) {
+    endpoint = endpoint.replace('{model}', encodeURIComponent(model));
+  }
   if (endpoint.startsWith('/v1/') && cleanUrl.endsWith('/v1')) return cleanUrl + endpoint.substring(3);
+  if (endpoint.startsWith('/v1beta/') && cleanUrl.endsWith('/v1beta')) return cleanUrl + endpoint.substring(7);
   return `${cleanUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 }
 
@@ -676,14 +840,17 @@ async function sendMessage() {
       }
     }
 
-    const apiUrl = getApiUrl(data.base_url, data.endpoint, data.model);
-    const claude = isClaudeModel(data.model);
+    const apiUrl = getApiUrl(data.base_url, data.endpoint, data.model, data.api_type);
+    const claude = (data.api_type === 'anthropic') || isClaudeModel(data.model);
+    const google = (data.api_type === 'google') || data.model.toLowerCase().includes('gemini');
 
     let requestBody;
     let systemText = '';
+    let isMessagesEndpoint = false;
 
     if (claude) {
       // Claude: system 单独提取，图片转 image 块，文件转 document 块
+      isMessagesEndpoint = true;
       const sysIdx = messages.findIndex(m => m.role === 'system');
       if (sysIdx !== -1) {
         systemText = messages[sysIdx].content;
@@ -714,6 +881,47 @@ async function sendMessage() {
         })
       };
       if (systemText) requestBody.system = systemText;
+    } else if (google) {
+      // Google Gemini: contents[] 格式，system 走 system_instruction
+      const sysIdx = messages.findIndex(m => m.role === 'system');
+      if (sysIdx !== -1) {
+        systemText = messages[sysIdx].content;
+        messages = messages.filter(m => m.role !== 'system');
+      }
+      const geminiRole = r => r === 'assistant' ? 'model' : 'user';
+      const partsFor = (m) => {
+        if (typeof m.content !== 'string' && Array.isArray(m.content)) {
+          const parts = [];
+          m.content.forEach(p => {
+            if (p.type === 'text') parts.push({ text: p.text });
+            else if (p.type === 'image_url') {
+              const match = p.image_url.url.match(/^data:(image\/(\w+));base64,(.+)$/);
+              if (match) parts.push({ inlineData: { mimeType: match[1], data: match[3] } });
+            }
+            else if (p.type === 'file') parts.push({ text: `[文件附件: ${p.name} (${formatSize(p.size)}) base64: ${p.data}]` });
+          });
+          return parts.length ? parts : [{ text: '' }];
+        }
+        return [{ text: String(m.content ?? '') }];
+      };
+      // 合并相邻同角色，避免 gemini 400 错误
+      const merged = [];
+      messages.forEach(m => {
+        const role = m.role === 'assistant' ? 'model' : 'user';
+        const parts = partsFor(m);
+        const last = merged[merged.length - 1];
+        if (last && last.role === role) last.parts.push(...parts);
+        else merged.push({ role, parts });
+      });
+      requestBody = {
+        contents: merged,
+        generationConfig: {
+          temperature: data.temperature,
+          maxOutputTokens: data.max_tokens,
+          topP: data.top_p,
+        }
+      };
+      if (systemText) requestBody.systemInstruction = { parts: [{ text: systemText }] };
     } else {
       // OpenAI 兼容：图片走 image_url，文件转为文本说明（多数 OpenAI 兼容接口不支持文件块）
       const finalMessages = messages.map(m => {
@@ -744,6 +952,7 @@ async function sendMessage() {
 
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.api_key}` };
     if (claude) { headers['anthropic-version'] = '2023-06-01'; headers['x-api-key'] = data.api_key; }
+    else if (google) { delete headers['Authorization']; }  // Gemini 用 ?key= 或 x-goog-api-key
 
     const startTime2 = performance.now();
     const response = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) });
@@ -757,15 +966,27 @@ async function sendMessage() {
     const respData = await response.json();
     let content;
 
-    if (claude || data.endpoint === '/v1/messages') {
+    if (claude || isMessagesEndpoint) {
+      // Claude /v1/messages 格式
       if (respData.content && respData.content.length > 0) {
         content = respData.content.filter(c => c.type === 'text').map(c => c.text).join('');
       } else {
         throw new Error('Invalid response: missing content');
       }
+    } else if (google) {
+      if (respData.candidates && respData.candidates.length > 0) {
+        content = (respData.candidates[0].content?.parts || [])
+          .filter(p => p.text).map(p => p.text).join('') || '(empty)';
+      } else {
+        throw new Error('Invalid response: missing candidates');
+      }
     } else {
+      // OpenAI 兼容格式
       if (respData.choices && respData.choices.length > 0) {
         content = respData.choices[0].message?.content || '(empty)';
+      } else if (respData.content && Array.isArray(respData.content)) {
+        // 部分兼容接口可能返回 Claude 风格 content
+        content = respData.content.filter(c => c.type === 'text').map(c => c.text).join('') || '(empty)';
       } else {
         throw new Error('Invalid response: missing choices');
       }

@@ -10,7 +10,8 @@ const FRONTEND_HTML = await Bun.file(FRONTEND_HTML_PATH).text();
 
 const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || "";  // 留空则无需认证
 const DB_PATH = process.env.DB_PATH || "./model_api_tester.db";
-const PORT = parseInt(process.env.PORT || "3000");
+const PORT = parseInt(process.env.PORT || "53080");   // 默认 53080（与内网门户约定）
+const HOST = process.env.HOST || "0.0.0.0";           // 默认监听所有网卡
 
 const db = new DB(DB_PATH);
 
@@ -104,13 +105,15 @@ export default {
 
     // --- 健康检查 ---
     if (path === "/api/health" && method === "GET") {
-      return json({ status: "ok", version: "1.0.0" }, 200, corsHeaders);
+      return json({ status: "ok", version: "0.1.1" }, 200, corsHeaders);
     }
 
     // ============================ 静态文件 ============================
     // 所有其他路径返回前端页面
     return serveStatic(path, corsHeaders);
   },
+  hostname: HOST,       // 监听地址（默认 0.0.0.0）
+  port: PORT,           // 监听端口（默认 53080）
 } satisfies Bun.Serve;
 
 // ============================ 辅助函数 ============================

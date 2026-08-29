@@ -23,6 +23,7 @@ export class DB {
         api_key TEXT NOT NULL,
         model TEXT NOT NULL,
         endpoint TEXT DEFAULT 'auto',
+        api_type TEXT DEFAULT 'openai',
         system_prompt TEXT DEFAULT '',
         temperature REAL DEFAULT 1,
         max_tokens INTEGER DEFAULT 4096,
@@ -32,6 +33,12 @@ export class DB {
         updated_at TEXT DEFAULT (datetime('now'))
       );
     `);
+
+    // 旧库迁移：补充 api_type 列（若不存在）
+    const cols = this.db.query("PRAGMA table_info(model_configs)").all() as any[];
+    if (!cols.some((c: any) => c.name === "api_type")) {
+      this.db.exec("ALTER TABLE model_configs ADD COLUMN api_type TEXT DEFAULT 'openai'");
+    }
 
     // 会话表
     this.db.exec(`
@@ -86,13 +93,14 @@ export class DB {
 
   createModelConfig(data: any) {
     const stmt = this.db.prepare(`
-      INSERT INTO model_configs (name, base_url, api_key, model, endpoint, system_prompt, temperature, max_tokens, top_p, frequency_penalty)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO model_configs (name, base_url, api_key, model, endpoint, api_type, system_prompt, temperature, max_tokens, top_p, frequency_penalty)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       data.name || `${data.model} @ ${new URL(data.base_url).host}`,
       data.base_url, data.api_key, data.model,
-      data.endpoint || "auto", data.system_prompt || "",
+      data.endpoint || "", data.api_type || "openai",
+      data.system_prompt || "",
       data.temperature ?? 1, data.max_tokens ?? 4096,
       data.top_p ?? 1, data.frequency_penalty ?? 0
     );
@@ -102,13 +110,13 @@ export class DB {
   updateModelConfig(id: number, data: any) {
     const stmt = this.db.prepare(`
       UPDATE model_configs SET
-        name = ?, base_url = ?, api_key = ?, model = ?, endpoint = ?,
+        name = ?, base_url = ?, api_key = ?, model = ?, endpoint = ?, api_type = ?,
         system_prompt = ?, temperature = ?, max_tokens = ?, top_p = ?, frequency_penalty = ?,
         updated_at = datetime('now')
       WHERE id = ?
     `);
     stmt.run(
-      data.name, data.base_url, data.api_key, data.model, data.endpoint,
+      data.name, data.base_url, data.api_key, data.model, data.endpoint, data.api_type || 'openai',
       data.system_prompt, data.temperature, data.max_tokens, data.top_p, data.frequency_penalty,
       id
     );

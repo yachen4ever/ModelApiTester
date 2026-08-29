@@ -1,6 +1,6 @@
 {
   "name": "model-api-tester",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Minimal LLM API testing tool with SQLite storage",
   "type": "module",
   "scripts": {
