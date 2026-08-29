@@ -1,6 +1,30 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: '6712670f-c95a-4b43-ad00-89be91095474'
+  PropagateID: '6712670f-c95a-4b43-ad00-89be91095474'
+  ReservedCode1: '239218d3-0c50-4242-ad27-9275710eedae'
+  ReservedCode2: '239218d3-0c50-4242-ad27-9275710eedae'
+---
+
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.1.2] — 2026-08-29
+
+### Bug Fixes
+- **对话删除修复**：删除对话后不再自动新建"新对话"，改为切换到最近一条剩余对话；仅在全部删完时才新建
+- **门户导航页链接修复**：`https://192.168.5.7:53080` → `http://192.168.5.7:53080`（服务仅跑 HTTP）
+
+### Features
+- 右上角设置按钮左侧新增 **GitHub 图标链接**，指向项目仓库
+- **保存模型配置**按钮从高级选项中移出，独立显示在配置表单下方，无需展开高级选项即可保存
+- 保存配置后显示已保存的模型地址提示从高级选项内移到按钮正下方
 
 ---
 
