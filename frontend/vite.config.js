@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import pkg from './package.json' with { type: 'json' };
 
 // Tauri dev/build 时会设置 TAURI_ENV_PLATFORM
 const isTauri = !!process.env.TAURI_ENV_PLATFORM;
@@ -8,6 +9,9 @@ export default defineConfig(({ command }) => ({
   // Web build → '/api-tester-rust/'；Tauri 或 dev → '/'
   base: command === 'build' && !isTauri ? '/api-tester-rust/' : '/',
   plugins: [tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     port: 5173,
     proxy: {

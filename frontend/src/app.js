@@ -62,7 +62,29 @@ function applyI18n() {
 async function init() {
   await loadConversations();
   await loadSavedConfigs();
-  if (!currentConvId) await newConversation();
+  // 如果没有任何会话才新建，否则不自动创建（避免刷新就生成空对话）
+  if (!currentConvId) {
+    const convs = await api('api/conversations');
+    if (convs && convs.length > 0) {
+      await loadConversation(convs[0].id);
+    }
+    // 没有任何会话时才创建新对话
+    if (!currentConvId) await newConversation();
+  }
+  // 从后端获取版本号，注入到页面
+  const fallbackVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
+  let version = '';
+  try {
+    const health = await api('api/health');
+    version = health.version || fallbackVersion;
+  } catch {
+    version = fallbackVersion;
+  }
+  if (version) {
+    document.title = `Model API Tester v${version}`;
+    const badge = document.getElementById('versionBadge');
+    if (badge) badge.textContent = `v${version}`;
+  }
 }
 
 // ============================================================
@@ -901,7 +923,7 @@ function renderApp() {
       </button>
       <h1 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
         <i class="fas fa-robot text-indigo-500"></i> Model API Tester
-        <span class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">v0.2.1</span>
+        <span class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5" id="versionBadge"></span>
       </h1>
       <span id="currentConvTitle" class="text-xs text-gray-400 ml-2 truncate"></span>
       <button id="langBtn" class="ml-auto p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition text-xs font-medium" data-i18n-title="switch_lang" title="切换语言">
