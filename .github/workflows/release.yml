@@ -35,7 +35,7 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       - name: Build (release)
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} -p mat-http-server
 
       - name: Rename binary
         shell: bash
@@ -117,6 +117,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          projectPath: crates/tauri-app
           tauriScript: npx @tauri-apps/cli
           args: --target ${{ matrix.target }}
 
