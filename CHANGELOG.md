@@ -1,0 +1,68 @@
+# Changelog
+
+All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.1.1] — 2026-08-29
+
+### Features
+- Default port changed from 3000 to **53080**; added `HOST` environment variable (default `0.0.0.0`)
+- Right drawer redesign:
+  - **API type dropdown** (openai / anthropic / google / other) — controls request body format and response parsing
+  - **Endpoint path dropdown** — provides candidate paths per API type (e.g. `/v1/chat/completions`, `/v1/messages`); empty value = auto-infer
+  - **Model field on its own line** with a refresh button to fetch model list from `/v1/models`, plus live filtering as you type
+- Added **Google Gemini API support**: `contents[]` format, `systemInstruction`, `inlineData` for images, adjacent same-role message merging
+- Attachment button moved to **right of input, left of send button**
+- Context toggle **defaults to off** (was on)
+- Title displays **version badge** (`v0.1.1`)
+- Added `api_type` column to `model_configs` table (with auto-migration for existing databases)
+
+### Bug Fixes
+- Fixed OpenAI response parsing — was incorrectly using Claude's `respData.content` path due to `isMessagesEndpoint` flag being set in the OpenAI branch
+- Fixed message meta (duration/tokens/model name) position — moved from right-side to **below the bubble**
+
+### Infrastructure
+- Added **GitHub Actions release workflow** (`.github/workflows/release.yml`) — auto-builds Linux + Windows binaries on tag push and creates a GitHub Release
+- Deployed to debsvc with updated systemd service (PORT=53080, HOST=0.0.0.0)
+- Nginx `/api-tester/` reverse proxy removed; portal navigation page now links directly to `https://192.168.5.7:53080`
+
+---
+
+## [v0.1.0] — 2026-08-29
+
+### Rewrite — Bun + SQLite Engineering Version
+
+Complete rewrite from the original single-file HTML fork into an engineering project:
+
+### Features
+- **Single-binary deployment** via `bun build --compile` (Linux / Windows / macOS targets)
+- **SQLite storage** (`bun:sqlite`) for model configs, conversations, messages, and images
+- **Multi-modal support** — image upload (OpenAI vision `image_url` format, Claude `image` source format), file upload (Claude `document` block)
+- **Response timing stats** — each reply shows elapsed time, token usage, model name
+- **Context toggle** — one-click switch for sending conversation history
+- **System prompt** support
+- **Model config persistence** — save/switch multiple configs
+- **Conversation persistence** — multi-conversation list, messages (including images) stored in SQLite
+- **Optional password auth** via `ACCESS_PASSWORD` environment variable
+- **Claude support** — auto-detects Claude models, adapts `/v1/messages` request/response format
+- **Auto URL dedup** — Base URL containing `/v1` is smart-deduplicated, avoiding `/v1/v1/...`
+- **Relative-path API** — frontend uses relative paths for sub-path deployment compatibility
+- **Tailwind CSS** (CDN) for UI styling, **showdown.js** for Markdown rendering
+- **Drawer-based UI** — left drawer for conversation list, right drawer for model config, both collapsible
+
+### Project Structure
+- `src/server.ts` — Bun HTTP server + REST API
+- `src/db.ts` — SQLite data layer (model configs, conversations, messages, images)
+- `src/frontend.html` — Frontend page (embedded at compile time)
+- `package.json`, `tsconfig.json`
+
+### Original Fork (Pre-v0.1.0)
+
+Based on [openai-api-tester](https://github.com/RunningFelix/openai-api-tester) by [@RunningFelix](https://github.com/RunningFelix) (MIT License).
+
+The original was a single-file HTML tool for testing OpenAI-compatible APIs. Before the v0.1.0 rewrite, the following modifications were made on top of the fork:
+
+- Fixed URL concatenation bug: Base URL already containing `/v1` was being appended with another `/v1`, resulting in `http://host/v1/v1/chat/completions`
+- Added smart URL dedup in `getApiUrl()` (handles both `auto` mode and manual endpoint)
+- Deployed to debsvc behind Nginx reverse proxy at `/api-tester/`

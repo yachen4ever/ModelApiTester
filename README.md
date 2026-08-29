@@ -1,5 +1,7 @@
 # ModelApiTester
 
+[English](./README_en.md) | 中文
+
 轻量级大模型 API 测试工具，前后端一体，单二进制部署。支持多模态对话、图片/文件上传、响应耗时统计、会话与模型配置持久化。
 
 专为个人/团队测试 API 可用性 + 保管 API Key 设计，不追求对话产品级体验，只做"填地址 → 发消息 → 看结果"。
@@ -7,16 +9,19 @@
 ## 特性
 
 - **单二进制部署** — Bun 编译为单文件可执行程序（Linux / Windows），SQLite 存储，无需 Node 运行时
+- **多 API 类型支持** — 内置 OpenAI / Anthropic / Google Gemini / 其他主流 API 格式，自动适配请求体与响应解析
+- **模型列表拉取** — 点击模型输入框刷新按钮，从接口 `/v1/models` 拉取可用模型列表，支持实时筛选
+- **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
-- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名
-- **上下文开关** — 一键切换是否携带历史上下文（关闭 = 纯单轮测试模式）
+- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名（位于气泡下方）
+- **上下文开关** — 一键切换是否携带历史上下文（关闭 = 纯单轮测试模式），默认关闭
 - **系统提示词** — 侧边栏可选填写 system prompt
-- **模型配置持久化** — 多个配置可保存/切换，Base URL / API Key / 模型名存入 SQLite
+- **模型配置持久化** — 多个配置可保存/切换，Base URL / API Key / 模型名 / API 类型存入 SQLite
 - **会话持久化** — 多会话列表，聊天记录（含图片）存 SQLite，刷新不丢
 - **可选密码认证** — 环境变量 `ACCESS_PASSWORD` 设置后，访问需输入密码（留空则无需认证）
 - **Claude 支持** — 自动识别 Claude 模型，适配 `/v1/messages` 格式 + 图片 source 格式
+- **Google Gemini 支持** — `contents[]` 格式、`systemInstruction`、`inlineData` 图片、相邻同角色消息合并
 - **自动 URL 去重** — Base URL 含 `/v1` 时智能去重，不会拼出 `/v1/v1/...`
-- **子路径部署** — 前端 API 使用相对路径，可部署在任意子路径（如 `/api-tester/`）
 
 ## 技术栈
 
@@ -24,7 +29,7 @@
 - **bun:sqlite** — 数据存储（模型配置、会话、消息、图片）
 - **Tailwind CSS**（CDN）— 界面样式
 - **showdown.js** — Markdown 渲染
-- **原生 fetch** — 请求 OpenAI / Claude 兼容接口
+- **原生 fetch** — 请求 OpenAI / Claude / Gemini 兼容接口
 
 ## 快速开始
 
@@ -37,7 +42,7 @@ bun run dev       # 开发模式（热重载）
 bun run start     # 直接运行
 ```
 
-默认监听 `:3000`，浏览器打开 `http://localhost:3000`。
+默认监听 `0.0.0.0:53080`，浏览器打开 `http://localhost:53080`。
 
 ### 编译二进制
 
@@ -56,7 +61,8 @@ bun build src/server.ts --compile --target=bun-darwin-x64 --outfile dist/model-a
 
 ```bash
 # 环境变量
-export PORT=3000
+export PORT=53080
+export HOST=0.0.0.0
 export DB_PATH=/opt/model-api-tester/model_api_tester.db
 export ACCESS_PASSWORD=your-password   # 可选，留空则无需认证
 
@@ -76,7 +82,8 @@ WorkingDirectory=/opt/model-api-tester
 ExecStart=/opt/model-api-tester/model-api-tester-linux
 Restart=always
 RestartSec=3
-Environment=PORT=3000
+Environment=PORT=53080
+Environment=HOST=0.0.0.0
 Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 # Environment=ACCESS_PASSWORD=your-password
 
@@ -122,10 +129,20 @@ ModelApiTester/
 │   ├── server.ts      # Bun HTTP 服务器 + REST API
 │   ├── db.ts          # SQLite 数据层
 │   └── frontend.html  # 前端页面（编译时内嵌）
+├── .github/
+│   └── workflows/
+│       └── release.yml  # GitHub Actions release 工作流
 ├── package.json
 ├── tsconfig.json
+├── README.md
+├── README_en.md
+├── CHANGELOG.md
 └── .gitignore
 ```
+
+## Changelog
+
+详见 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## Credits
 
