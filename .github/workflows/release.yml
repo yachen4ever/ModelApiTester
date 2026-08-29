@@ -113,13 +113,29 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Tauri app
+        working-directory: crates/tauri-app
+        run: npx @tauri-apps/cli build --target ${{ matrix.target }}
+
+      - name: Collect bundle artifacts
+        shell: bash
+        run: |
+          mkdir -p tauri-bundle
+          find target/${{ matrix.target }}/release/bundle -type f \( \
+            -name "*.dmg" -o \
+            -name "*.app.tar.gz" -o \
+            -name "*.msi" -o \
+            -name "*.exe" -o \
+            -name "*.deb" -o \
+            -name "*.AppImage" -o \
+            -name "*.rpm" \
+          \) -exec cp {} tauri-bundle/ \;
+
+      - name: Upload Tauri artifacts
+        uses: actions/upload-artifact@v4
         with:
-          projectPath: crates/tauri-app
-          tauriScript: npx @tauri-apps/cli
-          args: --target ${{ matrix.target }}
+          name: tauri-bundle-${{ matrix.os }}
+          path: tauri-bundle/*
 
   # ────────────────── 发布 Release ──────────────────
   release:
@@ -148,4 +164,4 @@ jobs:
             artifacts/model-api-tester-macos-arm64
             artifacts/model-api-tester-macos-x64
             artifacts/frontend-dist.zip
-            artifacts/*-tauri-*
+            artifacts/*
