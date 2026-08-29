@@ -165,9 +165,4 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            artifacts/model-api-tester-linux-x64
-            artifacts/model-api-tester-windows-x64.exe
-            artifacts/model-api-tester-macos-arm64
-            artifacts/model-api-tester-macos-x64
-            artifacts/frontend-dist.zip
             artifacts/*
