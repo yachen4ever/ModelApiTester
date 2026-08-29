@@ -805,7 +805,9 @@ function renderMessage(m) {
     });
   }
 
-  if (m.images && m.images.length > 0) {
+  // 附加存储的图片（仅当 content 不是数组或不包含 image_url 时才渲染，避免重复）
+  const contentHasImages = Array.isArray(content) && content.some(p => p.type === 'image_url');
+  if (!contentHasImages && m.images && m.images.length > 0) {
     m.images.forEach(dataUrl => {
       const img = document.createElement('img');
       img.className = 'max-w-[200px] max-h-48 rounded-lg mt-1';
