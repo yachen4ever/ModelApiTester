@@ -1,3 +1,14 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: '8e0a164d-7fc0-4866-badf-0f3fa2756287'
+  PropagateID: '8e0a164d-7fc0-4866-badf-0f3fa2756287'
+  ReservedCode1: 'a3b22e79-b127-4799-a4fa-5f06c4a7462a'
+  ReservedCode2: 'a3b22e79-b127-4799-a4fa-5f06c4a7462a'
+---
+
 # ModelApiTester
 
 [English](./README_en.md) | 中文
@@ -22,7 +33,7 @@
 - **会话持久化** — 多会话列表，聊天记录（含图片）存 SQLite，刷新不丢；支持一键清空全部对话
 - **i18n 国际化** — 中英文切换，默认按浏览器/OS 语言自动检测
 - **亮暗主题** — 亮色/暗色一键切换，偏好本地存储
-- **可选密码认证** — 环境变量 `ACCESS_PASSWORD` 设置后，访问需输入密码（留空则无需认证）
+- **Tauri 桌面版** — 同一套 Rust core + Vite 前端，打包为原生桌面应用（.msi / .dmg / .AppImage）
 - **Claude 支持** — 自动识别 Claude 模型，适配 `/v1/messages` 格式 + 图片 source 格式
 - **Google Gemini 支持** — `contents[]` 格式、`systemInstruction`、`inlineData` 图片、相邻同角色消息合并
 - **自动 URL 去重** — Base URL 含 `/v1` 时智能去重，不会拼出 `/v1/v1/...`
@@ -52,6 +63,7 @@
 | `model-api-tester-macos-arm64` | macOS Apple Silicon |
 | `model-api-tester-macos-x64` | macOS Intel |
 | `frontend-dist.zip` | 前端静态文件（所有平台通用） |
+| Tauri 安装包 | 桌面版应用（.msi / .dmg / .AppImage） |
 
 **部署步骤：**
 
@@ -104,14 +116,12 @@ cargo build --release
 | `PORT` | `52081` | 监听端口 |
 | `HOST` | `127.0.0.1` | 监听地址（对外暴露设为 `0.0.0.0`） |
 | `DB_PATH` | `./model_api_tester.db` | SQLite 数据库路径 |
-| `ACCESS_PASSWORD` | （空） | 访问密码，留空则无需认证 |
 
 ```bash
 # 示例
 export HOST=0.0.0.0
 export PORT=52081
 export DB_PATH=/opt/model-api-tester/model_api_tester.db
-export ACCESS_PASSWORD=your-password   # 可选
 ./model-api-tester
 ```
 
@@ -133,7 +143,6 @@ RestartSec=3
 Environment=HOST=127.0.0.1
 Environment=PORT=52081
 Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
-# Environment=ACCESS_PASSWORD=your-password
 
 [Install]
 WantedBy=multi-user.target
@@ -210,11 +219,12 @@ ModelApiTester/
 │   │       ├── lib.rs            # 模块导出 + VERSION
 │   │       ├── models.rs         # 数据结构 + DTO
 │   │       └── db.rs             # SQLite schema/迁移/CRUD
-│   └── http-server/              # axum HTTP 服务器
-│       ├── Cargo.toml
-│       ├── src/
-│       │   └── main.rs           # 路由 + 认证 + ServeDir 静态文件
-│       └── static/               # Vite 构建产物（gitignore）
+│   ├── http-server/              # axum HTTP 服务器
+│   │   ├── Cargo.toml
+│   │   ├── src/
+│   │   │   └── main.rs           # 路由 + ServeDir 静态文件
+│   │   └── static/               # Vite 构建产物（gitignore）
+│   └── tauri-app/                # Tauri 桌面版（复用 core）
 ├── frontend/                     # Vite 前端工程
 │   ├── package.json
 │   ├── vite.config.js
@@ -227,7 +237,7 @@ ModelApiTester/
 │       └── style.css             # Tailwind v4 + 自定义样式
 ├── .github/
 │   └── workflows/
-│       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包）
+│       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包 + Tauri 安装包）
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md

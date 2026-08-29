@@ -1,3 +1,14 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: 'afb17c29-aa43-461e-b99d-6af26897d5ef'
+  PropagateID: 'afb17c29-aa43-461e-b99d-6af26897d5ef'
+  ReservedCode1: '6c5288ba-a6d5-4178-9e34-641da194ddff'
+  ReservedCode2: '6c5288ba-a6d5-4178-9e34-641da194ddff'
+---
+
 # ModelApiTester
 
 English | [中文](./README.md)
@@ -22,7 +33,7 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh; one-click clear all conversations
 - **i18n** — Chinese/English toggle, defaults to browser/OS language
 - **Dark/light theme** — One-click toggle, preference saved to localStorage
-- **Optional password auth** — Set `ACCESS_PASSWORD` env var to require a password (empty = no auth)
+- **Tauri desktop app** — Same Rust core + Vite frontend, packaged as a native desktop application (.msi / .dmg / .AppImage)
 - **Claude support** — Auto-detects Claude models, adapts `/v1/messages` format + image source format
 - **Google Gemini support** — `contents[]` format, `systemInstruction`, `inlineData` images, adjacent same-role merge
 - **Auto URL dedup** — Smart deduplication when Base URL contains `/v1`, no `/v1/v1/...`
@@ -52,6 +63,7 @@ Go to [Releases](https://github.com/yachen4ever/ModelApiTester/releases) and dow
 | `model-api-tester-macos-arm64` | macOS Apple Silicon |
 | `model-api-tester-macos-x64` | macOS Intel |
 | `frontend-dist.zip` | Frontend static files (all platforms) |
+| Tauri installers | Desktop app (.msi / .dmg / .AppImage) |
 
 **Deployment steps:**
 
@@ -104,14 +116,12 @@ Configure via environment variables:
 | `PORT` | `52081` | Listen port |
 | `HOST` | `127.0.0.1` | Listen address (use `0.0.0.0` for external access) |
 | `DB_PATH` | `./model_api_tester.db` | SQLite database path |
-| `ACCESS_PASSWORD` | (empty) | Access password; empty = no auth |
 
 ```bash
 # Example
 export HOST=0.0.0.0
 export PORT=52081
 export DB_PATH=/opt/model-api-tester/model_api_tester.db
-export ACCESS_PASSWORD=your-password   # optional
 ./model-api-tester
 ```
 
@@ -133,7 +143,6 @@ RestartSec=3
 Environment=HOST=127.0.0.1
 Environment=PORT=52081
 Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
-# Environment=ACCESS_PASSWORD=your-password
 
 [Install]
 WantedBy=multi-user.target
@@ -210,11 +219,12 @@ ModelApiTester/
 │   │       ├── lib.rs            # Module exports + VERSION
 │   │       ├── models.rs         # Data structures + DTOs
 │   │       └── db.rs             # SQLite schema/migration/CRUD
-│   └── http-server/              # axum HTTP server
-│       ├── Cargo.toml
-│       ├── src/
-│       │   └── main.rs           # Routes + auth + ServeDir static files
-│       └── static/               # Vite build output (gitignored)
+│   ├── http-server/              # axum HTTP server
+│   │   ├── Cargo.toml
+│   │   ├── src/
+│   │   │   └── main.rs           # Routes + ServeDir static files
+│   │   └── static/               # Vite build output (gitignored)
+│   └── tauri-app/                # Tauri desktop app (reuses core)
 ├── frontend/                     # Vite frontend project
 │   ├── package.json
 │   ├── vite.config.js
@@ -227,7 +237,7 @@ ModelApiTester/
 │       └── style.css             # Tailwind v4 + custom styles
 ├── .github/
 │   └── workflows/
-│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip)
+│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri installers)
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md
