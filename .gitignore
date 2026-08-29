@@ -3,7 +3,18 @@ model-api-tester
 model-api-tester.exe
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 .env
 dist/
 *.log
 .bun-cache/
+
+# Rust
+/target/
+
+# Vite build output
+/crates/http-server/static/
+
+# Temp
+/.temp/
