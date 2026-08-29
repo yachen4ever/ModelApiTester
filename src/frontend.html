@@ -574,7 +574,7 @@ function renderMessage(m) {
   const isUser = m.role === 'user';
   const isError = m.is_error;
   const wrapper = document.createElement('div');
-  wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+  wrapper.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
 
   const bubble = document.createElement('div');
   bubble.className = `max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
