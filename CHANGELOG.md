@@ -1,6 +1,24 @@
+
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [Unreleased]
+
+### Features — Tauri 桌面应用骨架
+- **Tauri 2 集成** — 新增 `crates/tauri-app` crate，复用 `mat-core` 业务逻辑，通过 `api_request` IPC 命令与前端通信
+- **前端共享** — Tauri 桌面版与 Web 版共享同一份 Vite 前端代码，`api.js` 自动检测 Tauri 环境切换 `fetch` ↔ `invoke`
+- **Vite 构建兼容** — `vite.config.js` 根据环境变量区分 Web/Tauri 构建模式（base 路径、@tauri-apps/api 打包方式）
+- **GitHub Actions** — release workflow 新增 `build-tauri` job：Linux (.deb/.AppImage)、Windows (.msi)、macOS (.dmg)
+
+### Infrastructure — Tauri
+- `crates/tauri-app/` — 完整 Tauri 2 骨架（Cargo.toml、build.rs、src/lib.rs、src/main.rs、tauri.conf.json）
+- 图标文件生成（32x32/128x128/128x128@2x/icon.icns/icon.ico + Android/iOS 图标集）
+- `frontend/package.json` 新增 `@tauri-apps/api` 依赖（v2）
+- `vite.config.js` 移除 `external` 配置，改为正常打包（Tauri 2 中 `@tauri-apps/api` 是普通 npm 包）
+- 本地 `cargo check -p mat-tauri-app` 编译通过（MSVC + Tauri 2.11.5）
 
 ---
 

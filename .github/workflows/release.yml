@@ -78,10 +78,52 @@ jobs:
           name: frontend-dist
           path: frontend-dist.zip
 
+  # ────────────────── Tauri 桌面应用 ──────────────────
+  build-tauri:
+    name: Build Tauri (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: npx @tauri-apps/cli
+          args: --target ${{ matrix.target }}
+
   # ────────────────── 发布 Release ──────────────────
   release:
     name: Create Release
-    needs: [build-server, build-frontend]
+    needs: [build-server, build-frontend, build-tauri]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,3 +147,4 @@ jobs:
             artifacts/model-api-tester-macos-arm64
             artifacts/model-api-tester-macos-x64
             artifacts/frontend-dist.zip
+            artifacts/*-tauri-*

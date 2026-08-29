@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
+// Tauri dev/build 时会设置 TAURI_ENV_PLATFORM
+const isTauri = !!process.env.TAURI_ENV_PLATFORM;
+
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/api-tester-rust/' : '/',
+  // Web build → '/api-tester-rust/'；Tauri 或 dev → '/'
+  base: command === 'build' && !isTauri ? '/api-tester-rust/' : '/',
   plugins: [tailwindcss()],
   server: {
     port: 5173,
@@ -13,8 +17,7 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../crates/http-server/static',
     emptyOutDir: true,
-    rollupOptions: {
-      external: ['@tauri-apps/api/core'],
-    },
+    // @tauri-apps/api 在 Tauri 2 中是普通 npm 包，正常打包即可
+    // Web 构建时虽然打包进去但 isTauri=false 不会执行该分支
   },
 }));

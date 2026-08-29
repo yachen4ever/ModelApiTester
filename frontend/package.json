@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
     "showdown": "^2.1.0",
     "viewerjs": "^1.11.7"
   },
