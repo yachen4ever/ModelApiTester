@@ -26,6 +26,8 @@
 /* toggle */
 .toggle-bg { transition: background 0.2s; }
 .toggle-dot { transition: transform 0.2s; }
+input:checked + .toggle-bg { background: #6366f1; }
+input:checked + .toggle-bg .toggle-dot { transform: translateX(16px); }
 
 /* spinner */
 @keyframes spin { to { transform: rotate(360deg); } }
