@@ -2,10 +2,6 @@
 export const I18N = {
   zh: {
     app_title: 'Model API Tester',
-    access_verify: '访问验证',
-    enter_password: '输入访问密码',
-    enter: '进入',
-    wrong_password: '密码错误',
     conversation_list: '对话列表',
     new_conversation: '新建',
     clear_all: '清空',
@@ -60,10 +56,6 @@ export const I18N = {
   },
   en: {
     app_title: 'Model API Tester',
-    access_verify: 'Access Verification',
-    enter_password: 'Enter access password',
-    enter: 'Enter',
-    wrong_password: 'Wrong password',
     conversation_list: 'Conversations',
     new_conversation: 'New',
     clear_all: 'Clear All',

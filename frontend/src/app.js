@@ -1,5 +1,5 @@
 import { I18N, getInitialLang, t } from './i18n.js';
-import { api, getAccessToken, setAccessToken, onAuthRequired } from './api.js';
+import { api } from './api.js';
 
 let currentLang = getInitialLang();
 let currentTheme = localStorage.getItem('theme') || 'light';
@@ -57,38 +57,12 @@ function applyI18n() {
 }
 
 // ============================================================
-// 认证
-// ============================================================
-function showAuth() {
-  document.getElementById('authOverlay').classList.remove('hidden');
-}
-
-function doAuth() {
-  const val = document.getElementById('authInput').value;
-  setAccessToken(val);
-  api('api/health').then(() => {
-    document.getElementById('authOverlay').classList.add('hidden');
-    document.getElementById('authError').textContent = '';
-    init();
-  }).catch(() => {
-    document.getElementById('authError').textContent = t(currentLang, 'wrong_password');
-    setAccessToken('');
-  });
-}
-
-// ============================================================
 // 初始化
 // ============================================================
 async function init() {
-  try {
-    await api('api/health');
-    document.getElementById('authOverlay').classList.add('hidden');
-    await loadConversations();
-    await loadSavedConfigs();
-    if (!currentConvId) await newConversation();
-  } catch(e) {
-    showAuth();
-  }
+  await loadConversations();
+  await loadSavedConfigs();
+  if (!currentConvId) await newConversation();
 }
 
 // ============================================================
@@ -866,16 +840,6 @@ function viewerOptions() {
 function renderApp() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <!-- 认证遮罩 -->
-    <div id="authOverlay" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-2xl">
-        <h2 class="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200"><i class="fas fa-lock mr-1"></i><span data-i18n="access_verify">访问验证</span></h2>
-        <input type="password" id="authInput" data-i18n-ph="enter_password" placeholder="输入访问密码" class="w-56 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg text-sm mb-3">
-        <button id="authBtn" class="w-56 py-2 bg-indigo-500 text-white rounded-lg text-sm font-semibold hover:bg-indigo-600"><span data-i18n="enter">进入</span></button>
-        <div id="authError" class="text-red-600 text-sm mt-2 min-h-[18px]"></div>
-      </div>
-    </div>
-
     <!-- 顶部栏 -->
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 h-12 flex items-center gap-3 shrink-0">
       <button id="leftDrawerToggle" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400" data-i18n-title="conversation_list" title="会话列表">
@@ -1062,7 +1026,6 @@ function bindEvents() {
   document.getElementById('advBtn').onclick = toggleAdvanced;
   document.getElementById('fileBtn').onclick = () => document.getElementById('fileInput').click();
   document.getElementById('sendBtn').onclick = sendMessage;
-  document.getElementById('authBtn').onclick = doAuth;
 
   document.getElementById('fileInput').onchange = handleFileSelect;
   document.getElementById('input').onkeydown = handleKeyDown;
@@ -1074,12 +1037,7 @@ function bindEvents() {
   document.getElementById('model').oninput = () => filterModelSuggestions();
   document.getElementById('fetchModelsBtn').onclick = fetchModels;
 
-  document.getElementById('authInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doAuth();
-  });
-
   on('lang-changed', () => applyI18n());
-  onAuthRequired(showAuth);
 }
 
 // ============================================================
@@ -1101,5 +1059,4 @@ window.__app = {
   deleteConfig,
   removeAttachment,
   sendMessage,
-  doAuth,
 };

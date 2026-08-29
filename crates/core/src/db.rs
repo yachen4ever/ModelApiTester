@@ -3,8 +3,6 @@ use std::sync::Mutex;
 
 use crate::models::*;
 
-pub const VERSION: &str = "0.2.0";
-
 pub struct Database {
     conn: Mutex<Connection>,
 }

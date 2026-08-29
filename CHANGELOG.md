@@ -5,20 +5,34 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
-## [Unreleased]
+## [v0.3.0] — 2026-08-30
 
-### Features — Tauri 桌面应用骨架
+### Breaking Changes
+- **移除密码认证** — 完全删除 `ACCESS_PASSWORD` 环境变量及所有认证逻辑（Web 端 + Tauri 端），后端不再检查 `X-Auth-Password` header，前端不再有认证遮罩 UI
+
+### Features — Tauri 桌面应用
 - **Tauri 2 集成** — 新增 `crates/tauri-app` crate，复用 `mat-core` 业务逻辑，通过 `api_request` IPC 命令与前端通信
 - **前端共享** — Tauri 桌面版与 Web 版共享同一份 Vite 前端代码，`api.js` 自动检测 Tauri 环境切换 `fetch` ↔ `invoke`
 - **Vite 构建兼容** — `vite.config.js` 根据环境变量区分 Web/Tauri 构建模式（base 路径、@tauri-apps/api 打包方式）
 - **GitHub Actions** — release workflow 新增 `build-tauri` job：Linux (.deb/.AppImage)、Windows (.msi)、macOS (.dmg)
+
+### Bug Fixes
+- **db.rs 重复 VERSION 常量** — 删除 `db.rs` 中遗留的 `VERSION = "0.2.0"`，统一使用 `lib.rs` 中的 `VERSION`
 
 ### Infrastructure — Tauri
 - `crates/tauri-app/` — 完整 Tauri 2 骨架（Cargo.toml、build.rs、src/lib.rs、src/main.rs、tauri.conf.json）
 - 图标文件生成（32x32/128x128/128x128@2x/icon.icns/icon.ico + Android/iOS 图标集）
 - `frontend/package.json` 新增 `@tauri-apps/api` 依赖（v2）
 - `vite.config.js` 移除 `external` 配置，改为正常打包（Tauri 2 中 `@tauri-apps/api` 是普通 npm 包）
-- 本地 `cargo check -p mat-tauri-app` 编译通过（MSVC + Tauri 2.11.5）
+- 本地 `cargo build -p mat-tauri-app` 完整 debug 编译通过（MSVC + Tauri 2.11.5）
+
+### Removed
+- `ACCESS_PASSWORD` 环境变量
+- `check_auth()` 中间件函数 + 所有 handler 中的 `HeaderMap` / `Query` 参数
+- `AppState.access_password` 字段
+- 前端 `api.js` 中的 `accessToken` / `getAccessToken` / `setAccessToken` / `onAuthRequired` / `showAuthCallback`
+- 前端 `app.js` 中的 `authOverlay` HTML、`showAuth()` / `doAuth()` 函数、auth 事件绑定
+- `i18n.js` 中的 `access_verify` / `enter_password` / `enter` / `wrong_password` 词条
 
 ---
 
