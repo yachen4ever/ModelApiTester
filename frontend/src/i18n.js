@@ -53,6 +53,8 @@ export const I18N = {
     theme_dark: '暗色',
     switch_theme: '切换主题',
     switch_lang: '切换语言',
+    streaming: '生成中...',
+    generating: '正在生成',
   },
   en: {
     app_title: 'Model API Tester',
@@ -107,6 +109,8 @@ export const I18N = {
     theme_dark: 'Dark',
     switch_theme: 'Toggle theme',
     switch_lang: 'Switch language',
+    streaming: 'Generating...',
+    generating: 'Generating',
   }
 };
 

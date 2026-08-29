@@ -14,7 +14,8 @@
 - **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
 - **图片双击放大** — 集成 Viewer.js，双击聊天图片打开查看器，支持缩放/旋转/翻转/下载
-- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名（位于气泡下方）
+- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名（位于气泡下方）；流式模式下拆分 prefill/decode 各自耗时与 tok/s
+- **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标，流结束后自动 Markdown 渲染
 - **上下文开关** — 一键切换是否携带历史上下文（关闭 = 纯单轮测试模式），默认关闭
 - **系统提示词** — 侧边栏可选填写 system prompt
 - **模型配置持久化** — 多个配置可保存/切换，Base URL / API Key / 模型名 / API 类型存入 SQLite
@@ -223,6 +224,7 @@ ModelApiTester/
 │       ├── app.js                # 主应用（UI + 业务逻辑）
 │       ├── api.js                # API 客户端
 │       ├── i18n.js               # 中英文 i18n
+│       ├── stream.js             # SSE 流式响应解析器
 │       └── style.css             # Tailwind v4 + 自定义样式
 ├── .github/
 │   └── workflows/

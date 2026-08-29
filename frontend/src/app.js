@@ -1,5 +1,6 @@
 import { I18N, getInitialLang, t } from './i18n.js';
 import { api } from './api.js';
+import { readStream } from './stream.js';
 
 let currentLang = getInitialLang();
 let currentTheme = localStorage.getItem('theme') || 'light';
@@ -372,6 +373,131 @@ async function deleteConfig(id) {
 // ============================================================
 // 消息渲染
 // ============================================================
+
+/**
+ * 创建流式输出的气泡，返回控制对象
+ * update(text) — 增量更新内容
+ * finalize(meta) — 流结束后添加 meta 小字行
+ * remove() — 移除气泡
+ */
+function renderStreamBubble() {
+  const container = document.getElementById('chatHistory');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex flex-col items-start';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-md';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'md-content';
+  bubble.appendChild(contentDiv);
+
+  // 光标动画
+  const cursor = document.createElement('span');
+  cursor.className = 'inline-block w-1.5 h-4 bg-indigo-400 ml-0.5 align-middle';
+  cursor.style.animation = 'blink 1s steps(2) infinite';
+  bubble.appendChild(cursor);
+
+  wrapper.appendChild(bubble);
+  container.appendChild(wrapper);
+
+  return {
+    /** 最终渲染：全量 Markdown 转 HTML（流结束后调用一次） */
+    update(text) {
+      contentDiv.style.whiteSpace = '';
+      contentDiv.innerHTML = converter.makeHtml(text);
+    },
+    /**
+     * 流式期间的轻量更新：只设置纯文本，不做 Markdown 转换
+     * textContent 几乎零开销，不会阻塞 reader.read()
+     */
+    throttleUpdate() {
+      let pendingText = '';
+      let scheduled = false;
+      return (text) => {
+        pendingText = text;
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          // 纯文本显示，保留换行
+          contentDiv.textContent = pendingText;
+          contentDiv.style.whiteSpace = 'pre-wrap';
+        });
+      };
+    },
+    finalize(meta) {
+      cursor.remove();
+      // 复用 renderMessage 的 meta 渲染逻辑
+      if (meta && (meta.duration_ms || meta.tokens || meta.model_name || meta.prefill_ms || meta.decode_ms)) {
+        const metaDiv = document.createElement('div');
+        const m = { ...meta };
+        if (m.prefill_ms || m.decode_ms) {
+          let line1 = '<div class="flex gap-3">';
+          if (m.prefill_ms) {
+            line1 += `<span><i class="fas fa-arrow-down mr-0.5"></i>prefill ${formatDuration(m.prefill_ms)}`;
+            if (m.prompt_tokens) line1 += ` · ${m.prompt_tokens} tok`;
+            if (m.prefill_ms > 0) line1 += ` · ${formatTps(m.prompt_tokens, m.prefill_ms)}`;
+            line1 += '</span>';
+          }
+          if (m.decode_ms) {
+            line1 += `<span><i class="fas fa-arrow-up mr-0.5"></i>decode ${formatDuration(m.decode_ms)}`;
+            if (m.completion_tokens) line1 += ` · ${m.completion_tokens} tok`;
+            if (m.decode_ms > 0) line1 += ` · ${formatTps(m.completion_tokens, m.decode_ms)}`;
+            line1 += '</span>';
+          }
+          line1 += '</div>';
+          metaDiv.insertAdjacentHTML('beforeend', line1);
+        } else if (m.duration_ms) {
+          let line1 = '<div class="flex gap-3">';
+          line1 += `<span><i class="fas fa-clock mr-0.5"></i>${formatDuration(m.duration_ms)}</span>`;
+          if (m.tokens) line1 += `<span><i class="fas fa-coins mr-0.5"></i>${m.tokens} tokens</span>`;
+          line1 += '</div>';
+          metaDiv.insertAdjacentHTML('beforeend', line1);
+        }
+        if (m.model_name || (m.duration_ms && (m.prefill_ms || m.decode_ms))) {
+          let line2 = '<div class="flex gap-3">';
+          if (m.prefill_ms && m.decode_ms) {
+            line2 += `<span><i class="fas fa-clock mr-0.5"></i>total ${formatDuration(m.duration_ms)}</span>`;
+          }
+          if (m.model_name) {
+            line2 += `<span><i class="fas fa-microchip mr-0.5"></i>${escapeHtml(m.model_name)}</span>`;
+          }
+          line2 += '</div>';
+          metaDiv.insertAdjacentHTML('beforeend', line2);
+        }
+        metaDiv.className = 'text-[11px] text-gray-400 mt-1 flex flex-col gap-0.5 items-start';
+        wrapper.appendChild(metaDiv);
+      }
+    },
+    remove() {
+      wrapper.remove();
+    },
+    getWrapper() { return wrapper; },
+  };
+}
+
+/** 非流式 fallback：从完整 JSON 响应提取文本内容 */
+function extractContent(respData, claude, isMessagesEndpoint, google) {
+  if (claude || isMessagesEndpoint) {
+    return respData.content?.filter(c => c.type === 'text').map(c => c.text).join('') || '(empty)';
+  }
+  if (google) {
+    return (respData.candidates?.[0]?.content?.parts || []).filter(p => p.text).map(p => p.text).join('') || '(empty)';
+  }
+  return respData.choices?.[0]?.message?.content || '(empty)';
+}
+
+/** 非流式 fallback：从完整 JSON 响应提取 usage 元数据 */
+function extractMeta(respData, fallbackModel) {
+  return {
+    tokens: respData.usage?.total_tokens || respData.usage?.output_tokens || null,
+    model_name: respData.model || fallbackModel,
+    prompt_tokens: respData.usage?.prompt_tokens || respData.usage?.input_tokens || respData.usageMetadata?.promptTokenCount || null,
+    completion_tokens: respData.usage?.completion_tokens || respData.usage?.output_tokens || respData.usageMetadata?.candidatesTokenCount || null,
+  };
+}
+
 function renderMessage(m) {
   const container = document.getElementById('chatHistory');
   const isUser = m.role === 'user';
@@ -618,6 +744,11 @@ async function sendMessage() {
 
   const startTime = performance.now();
 
+  let startTime2 = 0;
+  let ttfb = 0;
+  let streamedContent = '';
+  let streamMeta = {};
+
   try {
     let messages = [];
     if (useContext) {
@@ -646,7 +777,7 @@ async function sendMessage() {
       }
     }
 
-    const apiUrl = getApiUrl(data.base_url, data.endpoint, data.model, data.api_type);
+    let apiUrl = getApiUrl(data.base_url, data.endpoint, data.model, data.api_type);
     const claude = (data.api_type === 'anthropic') || isClaudeModel(data.model);
     const google = (data.api_type === 'google') || data.model.toLowerCase().includes('gemini');
 
@@ -661,6 +792,7 @@ async function sendMessage() {
       requestBody = {
         model: data.model,
         max_tokens: data.max_tokens,
+        stream: true,
         messages: messages.map(m => {
           if (typeof m.content !== 'string') {
             return {
@@ -713,6 +845,7 @@ async function sendMessage() {
         contents: merged,
         generationConfig: { temperature: data.temperature, maxOutputTokens: data.max_tokens, topP: data.top_p }
       };
+      requestBody.stream = true;
       if (systemText) requestBody.systemInstruction = { parts: [{ text: systemText }] };
     } else {
       const finalMessages = messages.map(m => {
@@ -736,61 +869,97 @@ async function sendMessage() {
         temperature: data.temperature,
         max_tokens: data.max_tokens,
         top_p: data.top_p,
-        frequency_penalty: data.frequency_penalty
+        frequency_penalty: data.frequency_penalty,
+        stream: true,
       };
+    }
+
+    // Google 流式需要专用端点 + ?alt=sse 才会返回标准 SSE 格式
+    if (google) {
+      if (apiUrl.includes(':generateContent') && !apiUrl.includes(':streamGenerateContent')) {
+        apiUrl = apiUrl.replace(':generateContent', ':streamGenerateContent?alt=sse');
+      } else if (apiUrl.includes(':streamGenerateContent') && !apiUrl.includes('alt=sse')) {
+        apiUrl += (apiUrl.includes('?') ? '&' : '?') + 'alt=sse';
+      }
     }
 
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.api_key}` };
     if (claude) { headers['anthropic-version'] = '2023-06-01'; headers['x-api-key'] = data.api_key; }
     else if (google) { delete headers['Authorization']; }
 
-    const startTime2 = performance.now();
+    // 创建空气泡用于流式输出
+    const streamBubble = renderStreamBubble();
+    scrollToBottom();
+
+    startTime2 = performance.now();
+    let firstChunkTime = 0;
+    let lastChunkTime = 0;
+
     const response = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) });
-    const ttfb = performance.now() - startTime2;  // time to first byte (≈ prefill)
+    ttfb = performance.now() - startTime2;
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }));
       throw new Error(`API ${response.status}: ${errorData?.error?.message || response.statusText}`);
     }
 
-    const bodyStart = performance.now();
-    const respData = await response.json();
-    const bodyMs = performance.now() - bodyStart;  // body download + parse (≈ decode)
-    const elapsed = ttfb + bodyMs;
-    let content;
+    const contentType = response.headers.get('content-type') || '';
 
-    if (claude || isMessagesEndpoint) {
-      if (respData.content && respData.content.length > 0) {
-        content = respData.content.filter(c => c.type === 'text').map(c => c.text).join('');
-      } else {
-        throw new Error('Invalid response: missing content');
-      }
-    } else if (google) {
-      if (respData.candidates && respData.candidates.length > 0) {
-        content = (respData.candidates[0].content?.parts || [])
-          .filter(p => p.text).map(p => p.text).join('') || '(empty)';
-      } else {
-        throw new Error('Invalid response: missing candidates');
-      }
+    if (contentType.includes('text/event-stream') || contentType.includes('text/plain')) {
+      // ── 流式路径 ──
+      // 流式过程中只设置纯文本（textContent 零开销），不做 Markdown 转换
+      const throttledUpdate = streamBubble.throttleUpdate();
+      let scrollScheduled = false;
+
+      await readStream(response, {
+        onText: (text) => {
+          if (!firstChunkTime) firstChunkTime = performance.now();
+          lastChunkTime = performance.now();
+          streamedContent += text;
+          throttledUpdate(streamedContent);
+          if (!scrollScheduled) {
+            scrollScheduled = true;
+            requestAnimationFrame(() => {
+              scrollScheduled = false;
+              scrollToBottom();
+            });
+          }
+        },
+        onMeta: (m) => { streamMeta = { ...streamMeta, ...m }; },
+        onDone: () => {},
+      });
+
+      // 流结束后一次性 Markdown 渲染
+      streamBubble.update(streamedContent);
+      scrollToBottom();
     } else {
-      if (respData.choices && respData.choices.length > 0) {
-        content = respData.choices[0].message?.content || '(empty)';
-      } else if (respData.content && Array.isArray(respData.content)) {
-        content = respData.content.filter(c => c.type === 'text').map(c => c.text).join('') || '(empty)';
-      } else {
-        throw new Error('Invalid response: missing choices');
-      }
+      // ── 非流式 fallback ──
+      const respData = await response.json();
+      streamedContent = extractContent(respData, claude, isMessagesEndpoint, google);
+      streamMeta = extractMeta(respData, data.model);
+      streamBubble.update(streamedContent);
+      scrollToBottom();
+    }
+
+    const decodeMs = lastChunkTime > 0 ? lastChunkTime - firstChunkTime : 0;
+    const elapsed = ttfb + decodeMs;
+
+    streamMeta.model_name = streamMeta.model_name || data.model;
+    if (!streamMeta.completion_tokens) {
+      streamMeta.completion_tokens = Math.max(1, Math.round(streamedContent.length / 4));
     }
 
     const meta = {
       duration_ms: elapsed,
-      tokens: respData.usage?.total_tokens || respData.usage?.output_tokens || null,
-      model_name: respData.model || data.model,
-      prompt_tokens: respData.usage?.prompt_tokens || respData.usage?.input_tokens || respData.usageMetadata?.promptTokenCount || null,
-      completion_tokens: respData.usage?.completion_tokens || respData.usage?.output_tokens || respData.usageMetadata?.candidatesTokenCount || null,
+      tokens: streamMeta.tokens || (streamMeta.prompt_tokens && streamMeta.completion_tokens ? streamMeta.prompt_tokens + streamMeta.completion_tokens : streamMeta.completion_tokens),
+      model_name: streamMeta.model_name,
+      prompt_tokens: streamMeta.prompt_tokens || null,
+      completion_tokens: streamMeta.completion_tokens || null,
       prefill_ms: ttfb,
-      decode_ms: bodyMs,
+      decode_ms: decodeMs,
     };
+
+    streamBubble.finalize(meta);
 
     await api(`api/conversations/${currentConvId}`, {
       method: 'PUT',
@@ -802,7 +971,7 @@ async function sendMessage() {
       body: JSON.stringify({
         conversation_id: currentConvId,
         role: 'assistant',
-        content,
+        content: streamedContent,
         duration_ms: meta.duration_ms,
         tokens: meta.tokens,
         model_name: meta.model_name,
@@ -812,9 +981,6 @@ async function sendMessage() {
         decode_ms: meta.decode_ms,
       })
     });
-
-    renderMessage({ role: 'assistant', content, ...meta });
-    scrollToBottom();
 
     if (inputText && inputText.length <= 30) {
       const convs = await api('api/conversations');
@@ -832,19 +998,37 @@ async function sendMessage() {
     }
 
   } catch (error) {
-    const elapsed = performance.now() - startTime;
-    const errContent = `${t(currentLang, 'request_failed')}: ${error.message}`;
-    await api('api/messages', {
-      method: 'POST',
-      body: JSON.stringify({
-        conversation_id: currentConvId,
-        role: 'assistant',
-        content: errContent,
-        is_error: true,
-        duration_ms: elapsed
-      })
-    });
-    renderMessage({ role: 'assistant', content: errContent, is_error: true, duration_ms: elapsed });
+    // 如果流式已经开始输出再报错，保留已输出内容
+    if (streamedContent) {
+      streamBubble.finalize({ duration_ms: performance.now() - startTime2, model_name: data.model });
+      // 保存已收到的部分内容
+      await api('api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          conversation_id: currentConvId,
+          role: 'assistant',
+          content: streamedContent + `\n\n[${t(currentLang, 'request_failed')}: ${error.message}]`,
+          is_error: true,
+          duration_ms: performance.now() - startTime2,
+          model_name: data.model,
+        })
+      });
+    } else {
+      const elapsed = performance.now() - startTime;
+      const errContent = `${t(currentLang, 'request_failed')}: ${error.message}`;
+      streamBubble.remove();
+      await api('api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          conversation_id: currentConvId,
+          role: 'assistant',
+          content: errContent,
+          is_error: true,
+          duration_ms: elapsed
+        })
+      });
+      renderMessage({ role: 'assistant', content: errContent, is_error: true, duration_ms: elapsed });
+    }
     scrollToBottom();
   } finally {
     document.getElementById('spinner').classList.add('hidden');

@@ -14,7 +14,8 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
 - **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
-- **Response timing** — Each reply shows elapsed time, token usage, and model name (below the bubble)
+- **Response timing** — Each reply shows elapsed time, token usage, and model name (below the bubble); streaming mode breaks down prefill/decode timing and tok/s separately
+- **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
 - **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode), defaults to off
 - **System prompt** — Optional system prompt field in the sidebar
 - **Persistent model configs** — Save/switch multiple configs; Base URL / API Key / model name / API type stored in SQLite
@@ -223,6 +224,7 @@ ModelApiTester/
 │       ├── app.js                # Main app (UI + business logic)
 │       ├── api.js                # API client
 │       ├── i18n.js               # zh/en i18n
+│       ├── stream.js             # SSE streaming response parser
 │       └── style.css             # Tailwind v4 + custom styles
 ├── .github/
 │   └── workflows/

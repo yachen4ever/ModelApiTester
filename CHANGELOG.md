@@ -5,6 +5,25 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.3.1] — 2026-08-30
+
+### Features
+- **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标动画，流结束后一次性 Markdown 渲染
+- **prefill/decode 细粒度指标** — 流式模式下精确拆分 prefill（TTFB）与 decode（首 chunk 到末 chunk）耗时及各自 tok/s；数据库新增 `prompt_tokens`、`completion_tokens`、`prefill_ms`、`decode_ms` 四列（带自动 migration）
+- **版本号单一源** — `Cargo.toml` workspace version 为唯一来源，Rust 通过 `env!("CARGO_PKG_VERSION")` 读取，前端从 `/api/health` 动态获取，Vite `__APP_VERSION__` fallback
+- **刷新不自动创建新对话** — `init()` 改为优先加载最近会话，仅在零会话时才新建
+- **i18n 新增词条** — `streaming`、`generating`
+
+### Bug Fixes
+- **上下文 toggle 开关** — Tailwind v4 迁移后丢失 `input:checked + .toggle-bg` 位移规则，已补回
+- **Google Gemini 流式端点** — 自动将 `:generateContent` 替换为 `:streamGenerateContent?alt=sse`，确保返回标准 SSE 格式
+- **流式渲染性能** — 流式过程中使用 `textContent`（零开销）而非 `makeHtml()`，避免全文 Markdown 转换阻塞 `reader.read()` 导致 decode tok/s 偏低
+
+### Performance
+- 流式渲染节流：`requestAnimationFrame` 每帧最多重绘一次，滚动同步节流
+
+---
+
 ## [v0.3.0] — 2026-08-30
 
 ### Breaking Changes
