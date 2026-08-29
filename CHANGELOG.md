@@ -4,6 +4,22 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.2.1] — 2026-08-30
+
+### Features
+- **清空全部对话** — 对话列表"新建"旁新增"清空"按钮，一键删除所有对话（含二次确认）
+- **nginx 静态+反代分离部署** — 生产环境改造为 nginx 直接服务前端静态文件，仅 `/api/` 反代到 Rust 后端，后端不再承担静态文件服务
+
+### Bug Fixes
+- 修复 `#app` 容器缺少 flex 布局导致页面内容无法撑满高度、聊天区被截断的问题
+
+### Infrastructure
+- `vite.config.js` 构建时 `base` 设为 `/api-tester-rust/`（开发时 `/`）
+- `api.js` 使用 `import.meta.env.BASE_URL` 做 API 请求前缀，兼容子路径部署
+- debsvc nginx 配置改为 `alias` 静态文件 + `proxy_pass` API 反代双 location
+
+---
+
 ## [v0.2.0] — 2026-08-29
 
 ### Architecture Rewrite — Rust + Vite

@@ -19,7 +19,7 @@
 - **系统提示词** — 侧边栏可选填写 system prompt
 - **模型配置持久化** — 多个配置可保存/切换，Base URL / API Key / 模型名 / API 类型存入 SQLite
 - **对话记忆模型配置** — 每次发消息自动保存当前模型配置，重新打开对话时自动恢复
-- **会话持久化** — 多会话列表，聊天记录（含图片）存 SQLite，刷新不丢
+- **会话持久化** — 多会话列表，聊天记录（含图片）存 SQLite，刷新不丢；支持一键清空全部对话
 - **i18n 国际化** — 中英文切换，默认按浏览器/OS 语言自动检测
 - **亮暗主题** — 亮色/暗色一键切换，偏好本地存储
 - **可选密码认证** — 环境变量 `ACCESS_PASSWORD` 设置后，访问需输入密码（留空则无需认证）
@@ -139,11 +139,21 @@ Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 WantedBy=multi-user.target
 ```
 
-### Nginx 反向代理
+### Nginx 反向代理（前端静态 + API 反代分离）
+
+生产部署推荐 nginx 直接服务前端静态文件，仅反代 `/api/` 到 Rust 后端：
 
 ```nginx
-location /api-tester/ {
-    proxy_pass http://127.0.0.1:52081/;
+# 前端静态文件
+location /api-tester-rust/ {
+    alias /var/www/api-tester-rust/;
+    index index.html;
+    try_files $uri $uri/ /api-tester-rust/index.html =404;
+}
+
+# API 反代到 Rust 后端
+location /api-tester-rust/api/ {
+    proxy_pass http://127.0.0.1:52081/api/;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -156,6 +166,8 @@ location /api-tester/ {
     client_max_body_size 100m;
 }
 ```
+
+> 前端构建时需设 `base: '/api-tester-rust/'`（`vite.config.js` 已内置），资源路径会自动带上前缀。
 
 ## 本地开发
 

@@ -19,7 +19,7 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **System prompt** — Optional system prompt field in the sidebar
 - **Persistent model configs** — Save/switch multiple configs; Base URL / API Key / model name / API type stored in SQLite
 - **Per-conversation model memory** — Current model config is auto-saved per conversation and restored when reopening
-- **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh
+- **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh; one-click clear all conversations
 - **i18n** — Chinese/English toggle, defaults to browser/OS language
 - **Dark/light theme** — One-click toggle, preference saved to localStorage
 - **Optional password auth** — Set `ACCESS_PASSWORD` env var to require a password (empty = no auth)
@@ -139,11 +139,21 @@ Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 WantedBy=multi-user.target
 ```
 
-### Nginx Reverse Proxy
+### Nginx Reverse Proxy (Static Frontend + API Proxy)
+
+For production, nginx serves frontend static files directly and only proxies `/api/` to the Rust backend:
 
 ```nginx
-location /api-tester/ {
-    proxy_pass http://127.0.0.1:52081/;
+# Frontend static files
+location /api-tester-rust/ {
+    alias /var/www/api-tester-rust/;
+    index index.html;
+    try_files $uri $uri/ /api-tester-rust/index.html =404;
+}
+
+# API proxy to Rust backend
+location /api-tester-rust/api/ {
+    proxy_pass http://127.0.0.1:52081/api/;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -156,6 +166,8 @@ location /api-tester/ {
     client_max_body_size 100m;
 }
 ```
+
+> The frontend build uses `base: '/api-tester-rust/'` (built into `vite.config.js`), so asset paths are automatically prefixed.
 
 ## Local Development
 
