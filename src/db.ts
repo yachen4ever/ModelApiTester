@@ -53,6 +53,12 @@ export class DB {
       );
     `);
 
+    // 旧库迁移：补充 last_config 列（若不存在）
+    const convCols = this.db.query("PRAGMA table_info(conversations)").all() as any[];
+    if (!convCols.some((c: any) => c.name === "last_config")) {
+      this.db.exec("ALTER TABLE conversations ADD COLUMN last_config TEXT");
+    }
+
     // 消息表（支持多模态内容）
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS messages (
@@ -157,6 +163,7 @@ export class DB {
     if (data.title !== undefined) { fields.push("title = ?"); values.push(data.title); }
     if (data.model_config_id !== undefined) { fields.push("model_config_id = ?"); values.push(data.model_config_id); }
     if (data.context_enabled !== undefined) { fields.push("context_enabled = ?"); values.push(data.context_enabled); }
+    if (data.last_config !== undefined) { fields.push("last_config = ?"); values.push(data.last_config); }
     if (fields.length === 0) return;
     fields.push("updated_at = datetime('now')");
     values.push(id);

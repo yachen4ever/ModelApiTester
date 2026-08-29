@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Model API Tester v0.1.3</title>
+  <title>Model API Tester v0.1.4</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -19,6 +19,8 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.7/viewer.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.7/viewer.min.js"></script>
   <style>
     /* scrollbar */
     ::-webkit-scrollbar { width: 5px; }
@@ -334,8 +336,8 @@
       </div>
     </main>
 
-    <!-- 右抽屉：模型配置（默认收起） -->
-    <div id="rightDrawer" class="drawer-pane collapsed w-72 shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4 space-y-3">
+    <!-- 右抽屉：模型配置（默认展开） -->
+    <div id="rightDrawer" class="drawer-pane w-72 shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4 space-y-3">
       <!-- 模型配置表单 -->
       <div class="space-y-2.5">
         <div>
@@ -530,6 +532,13 @@ async function loadConversation(id) {
   if (found) {
     document.getElementById('currentConvTitle').textContent = found.title;
     document.getElementById('contextToggle').checked = !!found.context_enabled;
+    // 恢复上次使用的模型配置
+    if (found.last_config) {
+      try {
+        const cfg = JSON.parse(found.last_config);
+        applyConfig(cfg);
+      } catch(e) {}
+    }
   }
   const messages = await api(`api/conversations/${id}/messages`);
   const container = document.getElementById('chatHistory');
@@ -793,8 +802,9 @@ function renderMessage(m) {
         }
       } else if (part.type === 'image_url') {
         const img = document.createElement('img');
-        img.className = 'max-w-[200px] max-h-48 rounded-lg mt-1';
+        img.className = 'max-w-[200px] max-h-48 rounded-lg mt-1 cursor-zoom-in';
         img.src = part.image_url.url;
+        img.dataset.src = part.image_url.url;
         bubble.appendChild(img);
       } else if (part.type === 'file') {
         const fileDiv = document.createElement('div');
@@ -810,7 +820,8 @@ function renderMessage(m) {
   if (!contentHasImages && m.images && m.images.length > 0) {
     m.images.forEach(dataUrl => {
       const img = document.createElement('img');
-      img.className = 'max-w-[200px] max-h-48 rounded-lg mt-1';
+      img.className = 'max-w-[200px] max-h-48 rounded-lg mt-1 cursor-zoom-in';
+      img.dataset.src = dataUrl;
       img.src = dataUrl;
       bubble.appendChild(img);
     });
@@ -1167,6 +1178,12 @@ async function sendMessage() {
       model_name: respData.model || data.model
     };
 
+    // 保存当前模型配置到对话，下次打开时自动恢复
+    await api(`api/conversations/${currentConvId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ last_config: JSON.stringify(data) })
+    });
+
     await api('api/messages', {
       method: 'POST',
       body: JSON.stringify({
@@ -1265,11 +1282,40 @@ function tryGetHost(url) {
 }
 
 // ============================================================
+// 图片查看器（Viewer.js）
+// ============================================================
+let chatViewer = null;
+function initViewer() {
+  const el = document.getElementById('chatHistory');
+  chatViewer = new Viewer(el, {
+    trigger: 'dblclick',
+    toolbar: {
+      zoomIn: true,
+      zoomOut: true,
+      oneToOne: true,
+      reset: true,
+      rotateLeft: true,
+      rotateRight: true,
+      flipHorizontal: true,
+      flipVertical: true,
+      prev: false,
+      next: false,
+      play: false,
+      download: true,
+    },
+    title: false,
+    tooltip: false,
+   _transition: false,
+  });
+}
+
+// ============================================================
 // 启动
 // ============================================================
 applyTheme(currentTheme);
 document.documentElement.lang = currentLang === 'zh' ? 'zh' : 'en';
 applyI18n();
+initViewer();
 init();
 </script>
 </body>
