@@ -1,0 +1,9 @@
+node_modules/
+model-api-tester
+model-api-tester.exe
+*.db
+*.db-journal
+.env
+dist/
+*.log
+.bun-cache/
