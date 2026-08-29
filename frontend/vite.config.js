@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/api-tester-rust/' : '/',
   plugins: [tailwindcss()],
   server: {
     port: 5173,
@@ -16,4 +17,4 @@ export default defineConfig({
       external: ['@tauri-apps/api/core'],
     },
   },
-});
+}));

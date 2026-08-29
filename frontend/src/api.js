@@ -36,8 +36,10 @@ export async function api(path, options = {}) {
     return result;
   }
 
-  // Web 版：直接 fetch
-  const res = await fetch(path, { ...options, headers });
+  // Web 版：直接 fetch（BASE_URL 在构建时由 Vite 注入，dev='/' prod='/api-tester-rust/'）
+  const base = import.meta.env.BASE_URL; // 末尾带 /
+  const url = base + path;
+  const res = await fetch(url, { ...options, headers });
   if (res.status === 401) {
     showAuthCallback?.();
     throw new Error('Unauthorized');
