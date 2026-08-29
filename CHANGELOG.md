@@ -4,6 +4,40 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.2.0] — 2026-08-29
+
+### Architecture Rewrite — Rust + Vite
+
+Complete backend rewrite from Bun/TypeScript to Rust. Frontend migrated from a single embedded HTML to a modular Vite project.
+
+### Backend (Rust)
+- **Workspace structure** — `crates/core` (shared business logic) + `crates/http-server` (axum HTTP server), designed for future Tauri desktop crate to share the same `core`
+- **axum 0.8** — HTTP server framework with typed extractors and routing
+- **rusqlite** (bundled) — SQLite storage, same schema as Bun version, full backward compatibility with existing databases
+- **tower-http** — `ServeDir` for static file serving + CORS layer
+- **All 11 REST API routes** reimplemented (configs CRUD, conversations CRUD, messages CRUD, health check)
+- **Environment variables** — `PORT` (default `52081`), `HOST` (default `127.0.0.1`), `DB_PATH`, `ACCESS_PASSWORD`; breaking change: default port changed from `53080` to `52081`, default host from `0.0.0.0` to `127.0.0.1`
+- **Optional password auth** — same `X-Auth-Password` header / `?token=` query mechanism, preserved from Bun version
+
+### Frontend (Vite)
+- **Vite 6** — modular build replacing the single 1300+ line embedded HTML
+- **Tailwind CSS v4** — via `@tailwindcss/vite` plugin, replacing CDN approach
+- **Modular source** — `app.js` (main UI + logic), `api.js` (API client with Tauri `invoke` detection), `i18n.js` (zh/en dictionary), `main.js` (entry), `style.css`
+- **Tauri-ready** — `api.js` auto-detects Tauri environment and switches between `fetch` (web) and `invoke` (Tauri IPC), `vite.config.js` externals `@tauri-apps/api/core`
+- **All features preserved** — multimodal chat, image/file upload, Viewer.js, showdown.js, context toggle, model config persistence, per-conversation model memory, dark/light theme, i18n
+
+### Infrastructure
+- **GitHub Actions** — release workflow rebuilt: 3-platform Rust binaries (Linux x64, Windows x64, macOS arm64 + x64) + Vite frontend zip; old Bun build workflow replaced
+- **Git branches** — `bun` renamed to `bun_legacy_archived`; `main` is now the default branch with Rust code
+- **Deployed to debsvc** — systemd service `model-api-tester-rust.service` on port 52081, nginx reverse proxy at `/api-tester-rust/`, reusing the existing SQLite database from the Bun version
+
+### Breaking Changes
+- Default port: `53080` -> `52081`
+- Default host: `0.0.0.0` -> `127.0.0.1` (use `HOST=0.0.0.0` for external access)
+- Frontend no longer embedded in binary — must be deployed to `crates/http-server/static/` relative to working directory
+
+---
+
 ## [v0.1.4] — 2026-08-29
 
 ### Features

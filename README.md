@@ -2,13 +2,13 @@
 
 [English](./README_en.md) | 中文
 
-轻量级大模型 API 测试工具，前后端一体，单二进制部署。支持多模态对话、图片/文件上传、响应耗时统计、会话与模型配置持久化。
+轻量级大模型 API 测试工具，Rust 后端 + Vite 前端，单二进制部署。支持多模态对话、图片/文件上传、响应耗时统计、会话与模型配置持久化。
 
 专为个人/团队测试 API 可用性 + 保管 API Key 设计，不追求对话产品级体验，只做"填地址 → 发消息 → 看结果"。
 
 ## 特性
 
-- **单二进制部署** — Bun 编译为单文件可执行程序（Linux / Windows），SQLite 存储，无需 Node 运行时
+- **单二进制部署** — Rust 编译为原生可执行程序（Linux / Windows / macOS），SQLite 存储，无需任何运行时
 - **多 API 类型支持** — 内置 OpenAI / Anthropic / Google Gemini / 其他主流 API 格式，自动适配请求体与响应解析
 - **模型列表拉取** — 点击模型输入框刷新按钮，从接口 `/v1/models` 拉取可用模型列表，支持实时筛选
 - **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
@@ -29,52 +29,95 @@
 
 ## 技术栈
 
-- **Bun** — 运行时 + HTTP 服务器 + 编译器（`bun build --compile`）
-- **bun:sqlite** — 数据存储（模型配置、会话、消息、图片）
-- **Tailwind CSS**（CDN）— 界面样式 + 暗色模式
+- **Rust** — 后端语言
+- **axum** — HTTP 服务器框架
+- **rusqlite**（bundled）— SQLite 数据存储（模型配置、会话、消息、图片）
+- **tower-http** — 静态文件服务（ServeDir）+ CORS
+- **Vite 6** — 前端构建工具
+- **Tailwind CSS v4** — 界面样式 + 暗色模式
 - **showdown.js** — Markdown 渲染
 - **Viewer.js** — 图片查看器（缩放/旋转/翻转/下载）
 - **原生 fetch** — 请求 OpenAI / Claude / Gemini 兼容接口
 
-## 快速开始
+## 下载使用
 
-### 本地开发
+### 方式一：下载预编译二进制（推荐）
+
+前往 [Releases](https://github.com/yachen4ever/ModelApiTester/releases) 下载对应平台的文件：
+
+| 文件 | 平台 |
+|------|------|
+| `model-api-tester-linux-x64` | Linux x86_64 |
+| `model-api-tester-windows-x64.exe` | Windows x86_64 |
+| `model-api-tester-macos-arm64` | macOS Apple Silicon |
+| `model-api-tester-macos-x64` | macOS Intel |
+| `frontend-dist.zip` | 前端静态文件（所有平台通用） |
+
+**部署步骤：**
 
 ```bash
-bun install
-bun run dev       # 开发模式（热重载）
-# 或
-bun run start     # 直接运行
+# 1. 创建部署目录
+mkdir -p ~/model-api-tester/crates/http-server/static
+cd ~/model-api-tester
+
+# 2. 放入二进制
+cp ~/Downloads/model-api-tester-linux-x64 ./model-api-tester
+chmod +x model-api-tester
+
+# 3. 解压前端到 static 目录
+unzip ~/Downloads/frontend-dist.zip -d crates/http-server/static/
+
+# 4. 运行
+./model-api-tester
 ```
 
-默认监听 `0.0.0.0:53080`，浏览器打开 `http://localhost:53080`。
+浏览器打开 `http://localhost:52081` 即可使用。
 
-### 编译二进制
+> **注意**：前端静态文件必须放在相对于**工作目录**的 `crates/http-server/static/` 路径下，即与上述目录结构一致。
+
+### 方式二：从源码编译
+
+**环境要求：**
+- Rust 1.75+（`rustup` 安装）
+- Node.js 18+（前端构建）
 
 ```bash
-# Linux
-bun build src/server.ts --compile --target=bun-linux-x64 --outfile dist/model-api-tester-linux
+# 1. 构建前端
+cd frontend
+npm install
+npm run build        # 产物输出到 crates/http-server/static/
 
-# Windows
-bun build src/server.ts --compile --target=bun-windows-x64 --outfile dist/model-api-tester.exe
+# 2. 构建后端
+cd ..
+cargo build --release
 
-# macOS
-bun build src/server.ts --compile --target=bun-darwin-x64 --outfile dist/model-api-tester-mac
+# 3. 运行
+./target/release/model-api-tester
 ```
 
-### 生产运行
+## 配置
+
+通过环境变量配置：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `PORT` | `52081` | 监听端口 |
+| `HOST` | `127.0.0.1` | 监听地址（对外暴露设为 `0.0.0.0`） |
+| `DB_PATH` | `./model_api_tester.db` | SQLite 数据库路径 |
+| `ACCESS_PASSWORD` | （空） | 访问密码，留空则无需认证 |
 
 ```bash
-# 环境变量
-export PORT=53080
+# 示例
 export HOST=0.0.0.0
+export PORT=52081
 export DB_PATH=/opt/model-api-tester/model_api_tester.db
-export ACCESS_PASSWORD=your-password   # 可选，留空则无需认证
-
-./model-api-tester-linux
+export ACCESS_PASSWORD=your-password   # 可选
+./model-api-tester
 ```
 
-### systemd 服务示例
+## 生产部署
+
+### systemd 服务
 
 ```ini
 [Unit]
@@ -84,11 +127,11 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/model-api-tester
-ExecStart=/opt/model-api-tester/model-api-tester-linux
+ExecStart=/opt/model-api-tester/model-api-tester
 Restart=always
 RestartSec=3
-Environment=PORT=53080
-Environment=HOST=0.0.0.0
+Environment=HOST=127.0.0.1
+Environment=PORT=52081
 Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 # Environment=ACCESS_PASSWORD=your-password
 
@@ -96,11 +139,11 @@ Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 WantedBy=multi-user.target
 ```
 
-### Nginx 子路径反代
+### Nginx 反向代理
 
 ```nginx
 location /api-tester/ {
-    proxy_pass http://127.0.0.1:3000/;
+    proxy_pass http://127.0.0.1:52081/;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -113,6 +156,22 @@ location /api-tester/ {
     client_max_body_size 100m;
 }
 ```
+
+## 本地开发
+
+前后端分别启动，Vite dev server 代理 API 请求到 Rust 后端：
+
+```bash
+# 终端 1：启动后端（默认 127.0.0.1:52081）
+cargo run
+
+# 终端 2：启动前端 dev server（默认 localhost:5173，自动代理 /api → :52081）
+cd frontend
+npm install
+npm run dev
+```
+
+浏览器打开 `http://localhost:5173`，修改前端代码即时热更新。
 
 ## API
 
@@ -130,20 +189,40 @@ location /api-tester/ {
 
 ```
 ModelApiTester/
-├── src/
-│   ├── server.ts      # Bun HTTP 服务器 + REST API
-│   ├── db.ts          # SQLite 数据层
-│   └── frontend.html  # 前端页面（编译时内嵌）
+├── Cargo.toml                    # Rust workspace 根配置
+├── Cargo.lock
+├── crates/
+│   ├── core/                     # 共享业务逻辑
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs            # 模块导出 + VERSION
+│   │       ├── models.rs         # 数据结构 + DTO
+│   │       └── db.rs             # SQLite schema/迁移/CRUD
+│   └── http-server/              # axum HTTP 服务器
+│       ├── Cargo.toml
+│       ├── src/
+│       │   └── main.rs           # 路由 + 认证 + ServeDir 静态文件
+│       └── static/               # Vite 构建产物（gitignore）
+├── frontend/                     # Vite 前端工程
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html
+│   └── src/
+│       ├── main.js               # 入口
+│       ├── app.js                # 主应用（UI + 业务逻辑）
+│       ├── api.js                # API 客户端
+│       ├── i18n.js               # 中英文 i18n
+│       └── style.css             # Tailwind v4 + 自定义样式
 ├── .github/
 │   └── workflows/
-│       └── release.yml  # GitHub Actions release 工作流
-├── package.json
-├── tsconfig.json
+│       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包）
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md
 └── .gitignore
 ```
+
+> 旧 Bun 版代码归档在 `bun_legacy_archived` 分支。
 
 ## Changelog
 
@@ -151,7 +230,7 @@ ModelApiTester/
 
 ## Credits
 
-本项目第一版基于 [openai-api-tester](https://github.com/RunningFelix/openai-api-tester)（作者 [@RunningFelix](https://github.com/RunningFelix)，MIT License）改造，在原项目基础上新增了图片上传、响应耗时统计、上下文开关、UI 重构等功能。后演进为 Bun + SQLite 工程化版本。
+本项目第一版基于 [openai-api-tester](https://github.com/RunningFelix/openai-api-tester)（作者 [@RunningFelix](https://github.com/RunningFelix)，MIT License）改造，在原项目基础上新增了图片上传、响应耗时统计、上下文开关、UI 重构等功能。后先后演进为 Bun + SQLite 工程化版本和 Rust + Vite 重构版本。
 
 ## License
 

@@ -2,13 +2,13 @@
 
 English | [中文](./README.md)
 
-A lightweight LLM API testing tool with an all-in-one frontend/backend, deployable as a single binary. Supports multimodal chat, image/file upload, response timing stats, and persistent conversations & model configs.
+A lightweight LLM API testing tool with a Rust backend and Vite frontend, deployable as a single binary. Supports multimodal chat, image/file upload, response timing stats, and persistent conversations & model configs.
 
-Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint → send a message → see the result."
+Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint -> send a message -> see the result."
 
 ## Features
 
-- **Single-binary deployment** — Bun compiles to a standalone executable (Linux / Windows), SQLite storage, no Node runtime required
+- **Single-binary deployment** — Rust compiles to a native executable (Linux / Windows / macOS), SQLite storage, no runtime required
 - **Multi-API type support** — Built-in OpenAI / Anthropic / Google Gemini / other mainstream API formats, auto-adapts request body and response parsing
 - **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
 - **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
@@ -29,52 +29,95 @@ Designed for individuals/teams who need to test API availability and manage API 
 
 ## Tech Stack
 
-- **Bun** — Runtime + HTTP server + compiler (`bun build --compile`)
-- **bun:sqlite** — Data storage (model configs, conversations, messages, images)
-- **Tailwind CSS** (CDN) — UI styling + dark mode
+- **Rust** — Backend language
+- **axum** — HTTP server framework
+- **rusqlite** (bundled) — SQLite data storage (model configs, conversations, messages, images)
+- **tower-http** — Static file serving (ServeDir) + CORS
+- **Vite 6** — Frontend build tool
+- **Tailwind CSS v4** — UI styling + dark mode
 - **showdown.js** — Markdown rendering
 - **Viewer.js** — Image viewer (zoom/rotate/flip/download)
 - **Native fetch** — Requests to OpenAI / Claude / Gemini compatible endpoints
 
-## Quick Start
+## Download & Usage
 
-### Local Development
+### Option 1: Download Pre-built Binaries (Recommended)
+
+Go to [Releases](https://github.com/yachen4ever/ModelApiTester/releases) and download the files for your platform:
+
+| File | Platform |
+|------|----------|
+| `model-api-tester-linux-x64` | Linux x86_64 |
+| `model-api-tester-windows-x64.exe` | Windows x86_64 |
+| `model-api-tester-macos-arm64` | macOS Apple Silicon |
+| `model-api-tester-macos-x64` | macOS Intel |
+| `frontend-dist.zip` | Frontend static files (all platforms) |
+
+**Deployment steps:**
 
 ```bash
-bun install
-bun run dev       # dev mode (hot reload)
-# or
-bun run start     # direct run
+# 1. Create deployment directory
+mkdir -p ~/model-api-tester/crates/http-server/static
+cd ~/model-api-tester
+
+# 2. Place the binary
+cp ~/Downloads/model-api-tester-linux-x64 ./model-api-tester
+chmod +x model-api-tester
+
+# 3. Extract frontend to static directory
+unzip ~/Downloads/frontend-dist.zip -d crates/http-server/static/
+
+# 4. Run
+./model-api-tester
 ```
 
-Default listen on `0.0.0.0:53080`, open `http://localhost:53080` in browser.
+Open `http://localhost:52081` in your browser.
 
-### Compile Binary
+> **Note**: Frontend static files must be placed at `crates/http-server/static/` relative to the **working directory**.
+
+### Option 2: Build from Source
+
+**Prerequisites:**
+- Rust 1.75+ (install via `rustup`)
+- Node.js 18+ (for frontend build)
 
 ```bash
-# Linux
-bun build src/server.ts --compile --target=bun-linux-x64 --outfile dist/model-api-tester-linux
+# 1. Build frontend
+cd frontend
+npm install
+npm run build        # Output goes to crates/http-server/static/
 
-# Windows
-bun build src/server.ts --compile --target=bun-windows-x64 --outfile dist/model-api-tester.exe
+# 2. Build backend
+cd ..
+cargo build --release
 
-# macOS
-bun build src/server.ts --compile --target=bun-darwin-x64 --outfile dist/model-api-tester-mac
+# 3. Run
+./target/release/model-api-tester
 ```
 
-### Production Run
+## Configuration
+
+Configure via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `52081` | Listen port |
+| `HOST` | `127.0.0.1` | Listen address (use `0.0.0.0` for external access) |
+| `DB_PATH` | `./model_api_tester.db` | SQLite database path |
+| `ACCESS_PASSWORD` | (empty) | Access password; empty = no auth |
 
 ```bash
-# Environment variables
-export PORT=53080
+# Example
 export HOST=0.0.0.0
+export PORT=52081
 export DB_PATH=/opt/model-api-tester/model_api_tester.db
-export ACCESS_PASSWORD=your-password   # optional, empty = no auth
-
-./model-api-tester-linux
+export ACCESS_PASSWORD=your-password   # optional
+./model-api-tester
 ```
 
-### systemd Service Example
+## Production Deployment
+
+### systemd Service
 
 ```ini
 [Unit]
@@ -84,17 +127,51 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/model-api-tester
-ExecStart=/opt/model-api-tester/model-api-tester-linux
+ExecStart=/opt/model-api-tester/model-api-tester
 Restart=always
 RestartSec=3
-Environment=PORT=53080
-Environment=HOST=0.0.0.0
+Environment=HOST=127.0.0.1
+Environment=PORT=52081
 Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 # Environment=ACCESS_PASSWORD=your-password
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+### Nginx Reverse Proxy
+
+```nginx
+location /api-tester/ {
+    proxy_pass http://127.0.0.1:52081/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+    client_max_body_size 100m;
+}
+```
+
+## Local Development
+
+Start frontend and backend separately. The Vite dev server proxies API requests to the Rust backend:
+
+```bash
+# Terminal 1: Start backend (default 127.0.0.1:52081)
+cargo run
+
+# Terminal 2: Start frontend dev server (default localhost:5173, proxies /api -> :52081)
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser. Frontend code changes hot-reload instantly.
 
 ## API
 
@@ -112,20 +189,40 @@ WantedBy=multi-user.target
 
 ```
 ModelApiTester/
-├── src/
-│   ├── server.ts        # Bun HTTP server + REST API
-│   ├── db.ts            # SQLite data layer
-│   └── frontend.html    # Frontend page (embedded at compile time)
+├── Cargo.toml                    # Rust workspace root
+├── Cargo.lock
+├── crates/
+│   ├── core/                     # Shared business logic
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs            # Module exports + VERSION
+│   │       ├── models.rs         # Data structures + DTOs
+│   │       └── db.rs             # SQLite schema/migration/CRUD
+│   └── http-server/              # axum HTTP server
+│       ├── Cargo.toml
+│       ├── src/
+│       │   └── main.rs           # Routes + auth + ServeDir static files
+│       └── static/               # Vite build output (gitignored)
+├── frontend/                     # Vite frontend project
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html
+│   └── src/
+│       ├── main.js               # Entry
+│       ├── app.js                # Main app (UI + business logic)
+│       ├── api.js                # API client
+│       ├── i18n.js               # zh/en i18n
+│       └── style.css             # Tailwind v4 + custom styles
 ├── .github/
 │   └── workflows/
-│       └── release.yml  # GitHub Actions release workflow
-├── package.json
-├── tsconfig.json
+│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip)
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md
 └── .gitignore
 ```
+
+> The legacy Bun version is archived in the `bun_legacy_archived` branch.
 
 ## Changelog
 
@@ -133,7 +230,7 @@ See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Credits
 
-This project started as a fork of [openai-api-tester](https://github.com/RunningFelix/openai-api-tester) by [@RunningFelix](https://github.com/RunningFelix) (MIT License). It has since been rewritten as a Bun + SQLite engineering version with image upload, response timing, context toggle, UI redesign, multi-API type support, and more.
+This project started as a fork of [openai-api-tester](https://github.com/RunningFelix/openai-api-tester) by [@RunningFelix](https://github.com/RunningFelix) (MIT License). It has since been rewritten first as a Bun + SQLite engineering version, then as a Rust + Vite rewrite, with image upload, response timing, context toggle, UI redesign, multi-API type support, and more.
 
 ## License
 
