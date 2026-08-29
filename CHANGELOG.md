@@ -4,6 +4,18 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.1.4] — 2026-08-29
+
+### Features
+- **对话记忆模型配置**：每次发送消息时自动保存当前模型配置到对话记录，重新打开对话时自动恢复 Base URL / API Key / 模型 / 参数等
+- **默认展开两侧抽屉**：左右抽屉默认展开，无需手动点击
+- **图片双击放大**：集成 Viewer.js，聊天区图片双击打开查看器，支持缩放/旋转/翻转/下载等操作
+
+### Bug Fixes
+- 修复图片重复显示问题（content 数组与 m.images 双重渲染）
+
+---
+
 ## [v0.1.3] — 2026-08-29
 
 ### Features

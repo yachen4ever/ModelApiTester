@@ -13,11 +13,15 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
 - **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
+- **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
 - **Response timing** — Each reply shows elapsed time, token usage, and model name (below the bubble)
 - **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode), defaults to off
 - **System prompt** — Optional system prompt field in the sidebar
 - **Persistent model configs** — Save/switch multiple configs; Base URL / API Key / model name / API type stored in SQLite
+- **Per-conversation model memory** — Current model config is auto-saved per conversation and restored when reopening
 - **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh
+- **i18n** — Chinese/English toggle, defaults to browser/OS language
+- **Dark/light theme** — One-click toggle, preference saved to localStorage
 - **Optional password auth** — Set `ACCESS_PASSWORD` env var to require a password (empty = no auth)
 - **Claude support** — Auto-detects Claude models, adapts `/v1/messages` format + image source format
 - **Google Gemini support** — `contents[]` format, `systemInstruction`, `inlineData` images, adjacent same-role merge
@@ -27,8 +31,9 @@ Designed for individuals/teams who need to test API availability and manage API 
 
 - **Bun** — Runtime + HTTP server + compiler (`bun build --compile`)
 - **bun:sqlite** — Data storage (model configs, conversations, messages, images)
-- **Tailwind CSS** (CDN) — UI styling
+- **Tailwind CSS** (CDN) — UI styling + dark mode
 - **showdown.js** — Markdown rendering
+- **Viewer.js** — Image viewer (zoom/rotate/flip/download)
 - **Native fetch** — Requests to OpenAI / Claude / Gemini compatible endpoints
 
 ## Quick Start
