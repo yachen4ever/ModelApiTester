@@ -14,6 +14,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 rusqlite = { workspace = true }
 dirs-next = "2"
+reqwest = { workspace = true }
+tokio = { workspace = true }
 
 [features]
 default = ["custom-protocol"]

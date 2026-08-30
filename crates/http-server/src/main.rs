@@ -8,12 +8,16 @@ use clap::Parser;
 use mat_core::{CreateConversation, CreateMessage, CreateModelConfig, Database, UpdateConversation, UpdateModelConfig, VERSION};
 use serde_json::{json, Value};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex as AsyncMutex;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 struct AppState {
     db: Arc<Database>,
+    http: reqwest::Client,
+    update_cache: Arc<AsyncMutex<Option<(Instant, Value)>>>,
 }
 
 struct AppError(String);
@@ -50,6 +54,11 @@ struct Args {
 pub fn build_router(db: Database, static_dir: &str) -> Router {
     let state = AppState {
         db: Arc::new(db),
+        http: reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("failed to build http client"),
+        update_cache: Arc::new(AsyncMutex::new(None)),
     };
 
     Router::new()
@@ -60,6 +69,7 @@ pub fn build_router(db: Database, static_dir: &str) -> Router {
         .route("/api/conversations/{id}/messages", get(list_messages).delete(delete_messages))
         .route("/api/messages", post(create_message))
         .route("/api/health", get(health))
+        .route("/api/check-update", get(check_update))
         .fallback_service(ServeDir::new(static_dir))
         .layer(CorsLayer::very_permissive())
         .with_state(state)
@@ -69,6 +79,51 @@ pub fn build_router(db: Database, static_dir: &str) -> Router {
 
 async fn health(State(_s): State<AppState>) -> Json<Value> {
     Json(json!({ "status": "ok", "version": VERSION }))
+}
+
+/// 检查 GitHub 最新 release（带 1 小时缓存）
+async fn check_update(State(s): State<AppState>) -> Json<Value> {
+    // 命中缓存直接返回
+    if let Some((ts, cached)) = s.update_cache.lock().await.as_ref() {
+        if ts.elapsed() < Duration::from_secs(3600) {
+            return Json(cached.clone());
+        }
+    }
+
+    let url = "https://api.github.com/repos/yachen4ever/ModelApiTester/releases/latest";
+    let result = s
+        .http
+        .get(url)
+        .header("User-Agent", "ModelApiTester")
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await;
+
+    let payload = match result {
+        Ok(resp) if resp.status().is_success() => {
+            let body: Value = resp.json().await.unwrap_or(Value::Null);
+            let latest = body["tag_name"].as_str().unwrap_or("").to_string();
+            let html_url = body["html_url"].as_str().unwrap_or("").to_string();
+            let current = VERSION.trim_start_matches('v').to_string();
+            let latest_trim = latest.trim_start_matches('v').to_string();
+            let has_update = !latest.is_empty() && latest_trim != current;
+            json!({
+                "available": true,
+                "current_version": VERSION,
+                "latest_version": latest,
+                "has_update": has_update,
+                "html_url": html_url,
+            })
+        }
+        _ => json!({
+            "available": false,
+            "current_version": VERSION,
+            "error": "GitHub API 不可达",
+        }),
+    };
+
+    *s.update_cache.lock().await = Some((Instant::now(), payload.clone()));
+    Json(payload)
 }
 
 // --- 模型配置 ---

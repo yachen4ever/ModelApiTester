@@ -4,6 +4,36 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.5.3] — 2026-08-30
+
+### Features — 统一图标 + 关于页面 + 桌面版单文件
+- **统一应用图标** — 设计全新图标（Indigo 渐变圆角方块 + 居中白色闪电符号），
+  统一 Web favicon 与桌面版（Tauri）图标，全平台一套视觉
+- **语言切换按钮改进** — 中文界面显示 `EN`，英文界面显示 `中`，替代原 `fa-language` 图标，语义更直观
+- **关于（About）弹窗** — 导航栏新增"关于"按钮（`fa-circle-info`），仿 Chrome 关于页风格：
+  - 品牌区：应用图标 + 名称 + 副标题
+  - 更新检测区：启动时自动检查 GitHub 最新版本，展示 checking / current / outdated / error 四种状态；
+    检测到新版本时显示"可更新"按钮，点击跳转下载页（不自动下载）
+  - 链接区：GitHub、更新日志（CHANGELOG）、致谢（openai-api-tester）
+  - 版权区：版权声明 + MIT License 声明
+- **Tauri 桌面版改为单可执行文件** — 不再生成安装包（msi/dep/dmg），
+  数据目录改为 `~/.mat-desktop/`（原平台 data 目录），便于绿色分发
+
+### Technical
+- 新增 `frontend/public/app-icon.svg` — 1024×1024 应用图标源文件（Indigo 渐变 + FA bolt 路径）
+- 新增 `frontend/src/components/AboutDialog.vue` — 关于弹窗组件（含更新检测逻辑）
+- `frontend/index.html` — 新增 `<link rel="icon">` 指向 `app-icon.svg`
+- `crates/tauri-app/icons/` — 用 `tauri icon` 重新生成全套平台图标（ico/icns/png）
+- `frontend/src/App.vue` — 语言按钮文字化 + 新增关于按钮 + 接入 AboutDialog
+- `frontend/src/i18n.js` — 新增约 16 个 `about_*` 中英文 key
+- `crates/http-server/src/main.rs` — 新增 `GET /api/check-update` 接口（代理 GitHub API，1 小时缓存）
+- `crates/tauri-app/src/lib.rs` — 更新检测路由 + 请求重构为 async（tokio），
+  数据目录改为 `~/.mat-desktop`
+- `crates/tauri-app/tauri.conf.json` — `bundle.active: false`（不打包安装器）
+- `.github/workflows/release.yml` — build-tauri 改为 `--no-bundle`，收集裸二进制发布
+
+---
+
 ## [v0.5.2] — 2026-08-30
 
 ### Features — 预设测试提示词

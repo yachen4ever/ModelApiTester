@@ -11,6 +11,9 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **Multi-API type support** — Built-in OpenAI / Anthropic / Google Gemini / other mainstream API formats, auto-adapts request body and response parsing
 - **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
 - **Preset test prompts** — 32 curated prompts across 8 capability categories (reasoning / coding / math / instruction following / creative writing / multilingual / knowledge / safety), one-click fill into the input box, ideal for quickly comparing model capabilities
+- **Unified app icon** — Indigo gradient rounded square + white lightning bolt, consistent across Web favicon and desktop
+- **About dialog** — Chrome-like about page: brand area + update checker (auto-checks GitHub latest release, one-click jump to download when outdated) + GitHub / Changelog / Credits links
+- **Single-file desktop executable** — Tauri build no longer bundles installers; one portable binary, data stored in `~/.mat-desktop/`
 - **Response timing** — Each reply shows elapsed time, token usage, and model name; streaming mode breaks down prefill/decode timing and tok/s separately
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
 - **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
@@ -147,15 +150,19 @@ location /api-tester-rust/api/ {
 
 ### Mode 2: Desktop App (Tauri)
 
-Download the installer for your platform from [Releases](https://github.com/yachen4ever/ModelApiTester/releases):
+Download the executable for your platform from [Releases](https://github.com/yachen4ever/ModelApiTester/releases) (**single file, no installer**):
 
 | File | Platform |
 |------|----------|
-| `mat-desktop_*_x64_en-US.msi` | Windows x86_64 |
-| `mat-desktop_*_aarch64.dmg` | macOS Apple Silicon |
-| `mat-desktop_*_amd64.deb` / `.AppImage` | Linux x86_64 |
+| `mat-desktop-windows-x64.exe` | Windows x86_64 |
+| `mat-desktop-darwin-arm64` | macOS Apple Silicon |
+| `mat-desktop-darwin-x64` | macOS Intel |
+| `mat-desktop-linux-x64` | Linux x86_64 |
 
-Install and launch directly — data is stored in the system data directory, no server configuration needed.
+Download and launch directly — data is stored in `~/.mat-desktop/`, no server configuration needed.
+
+> **Note**: Since v0.5.3 the desktop build is a single executable (no msi/dmg/deb installers).
+> The data directory is fixed to `~/.mat-desktop/model_api_tester.db` for portable green distribution.
 
 <!-- screenshot placeholder -->
 
@@ -273,7 +280,7 @@ ModelApiTester/
 │           └── useUtils.js         #   Utility functions + request builder
 ├── .github/
 │   └── workflows/
-│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri installers)
+│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri single executable)
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md

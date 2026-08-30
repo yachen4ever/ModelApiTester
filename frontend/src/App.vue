@@ -3,6 +3,7 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import ConversationList from './components/ConversationList.vue';
 import ModelConfig from './components/ModelConfig.vue';
 import ChatPanel from './components/ChatPanel.vue';
+import AboutDialog from './components/AboutDialog.vue';
 import { api } from './composables/useApi.js';
 import { useI18n } from './i18n.js';
 
@@ -38,6 +39,9 @@ const contextEnabled = ref(false);
 
 // ── 版本号 ──
 const version = ref('');
+
+// ── About 对话框 ──
+const showAbout = ref(false);
 
 // ── ModelConfig ref ──
 const modelConfigRef = ref(null);
@@ -189,8 +193,8 @@ onMounted(() => {
       <span v-if="version" class="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">v{{ version }}</span>
     </h1>
     <span class="text-xs text-gray-400 ml-2 truncate">{{ currentConvTitle }}</span>
-    <button @click="toggleLang" class="ml-auto p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition text-xs font-medium" :title="t('switch_lang')">
-      <i class="fas fa-language w-5 text-center"></i>
+    <button @click="toggleLang" class="ml-auto px-2 h-8 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition text-[11px] font-semibold leading-none flex items-center" :title="t('switch_lang')">
+      {{ currentLang === 'zh' ? 'EN' : '中' }}
     </button>
     <button @click="toggleTheme" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition" :title="t('switch_theme')">
       <i :class="currentTheme === 'dark' ? 'fas fa-sun w-5 text-center' : 'fas fa-moon w-5 text-center'"></i>
@@ -198,6 +202,9 @@ onMounted(() => {
     <a href="https://github.com/yachen4ever/ModelApiTester" target="_blank" rel="noopener" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition" :title="t('github_repo')">
       <i class="fab fa-github w-5 text-center text-base"></i>
     </a>
+    <button @click="showAbout = true" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition" :title="t('about_title')">
+      <i class="fas fa-circle-info w-5 text-center text-base"></i>
+    </button>
     <button @click="toggleRightDrawer" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400" :title="t('api_type')">
       <i class="fas fa-cog w-5 text-center"></i>
     </button>
@@ -235,4 +242,7 @@ onMounted(() => {
       <ModelConfig ref="modelConfigRef" :t="t" @config-applied="onConfigApplied" />
     </div>
   </div>
+
+  <!-- About 对话框 -->
+  <AboutDialog :visible="showAbout" :version="version" :t="t" @close="showAbout = false" />
 </template>

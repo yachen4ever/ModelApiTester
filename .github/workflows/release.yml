@@ -121,27 +121,22 @@ jobs:
 
       - name: Build Tauri app
         working-directory: crates/tauri-app
-        run: npx @tauri-apps/cli build --target ${{ matrix.target }}
+        run: npx @tauri-apps/cli build --target ${{ matrix.target }} --no-bundle
 
-      - name: Collect bundle artifacts
+      - name: Collect binary
         shell: bash
         run: |
-          mkdir -p tauri-bundle
-          find target/${{ matrix.target }}/release/bundle -type f \( \
-            -name "*.dmg" -o \
-            -name "*.app.tar.gz" -o \
-            -name "*.msi" -o \
-            -name "*.exe" -o \
-            -name "*.deb" -o \
-            -name "*.AppImage" -o \
-            -name "*.rpm" \
-          \) -exec cp {} tauri-bundle/ \;
+          mkdir -p tauri-bin
+          BIN="mat-desktop"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then BIN="$BIN.exe"; fi
+          cp "target/${{ matrix.target }}/release/$BIN" "tauri-bin/$BIN"
+          ls -lh tauri-bin/
 
-      - name: Upload Tauri artifacts
+      - name: Upload Tauri binary
         uses: actions/upload-artifact@v4
         with:
-          name: tauri-bundle-${{ matrix.os }}
-          path: tauri-bundle/*
+          name: tauri-bin-${{ matrix.os }}
+          path: tauri-bin/*
 
   # ────────────────── 发布 Release ──────────────────
   release:

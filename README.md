@@ -11,6 +11,9 @@
 - **多 API 类型支持** — 内置 OpenAI / Anthropic / Google Gemini / 其他主流 API 格式，自动适配请求体与响应解析
 - **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标，流结束后自动 Markdown 渲染
 - **预设测试提示词** — 内置 8 大能力分类（推理/代码/数学/指令遵循/创意写作/多语言/常识/安全）共 32 条精选提示词，一键填入输入框，适合快速对比不同模型的能力差异
+- **统一图标** — Indigo 渐变圆角方块 + 白色闪电符号，Web favicon 与桌面版图标全平台统一
+- **关于（About）弹窗** — 仿 Chrome 关于页：品牌区 + 更新检测（自动检查 GitHub 最新版本，有新版本时一键跳转下载）+ GitHub / 更新日志 / 致谢链接
+- **桌面版单可执行文件** — Tauri 版不再打包安装器，单个二进制绿色分发，数据存于 `~/.mat-desktop/`
 - **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名；流式模式下拆分 prefill/decode 各自耗时与 tok/s
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
 - **图片双击放大** — 集成 Viewer.js，双击聊天图片打开查看器，支持缩放/旋转/翻转/下载
@@ -147,15 +150,19 @@ location /api-tester-rust/api/ {
 
 ### 方式二：桌面应用（Tauri）
 
-前往 [Releases](https://github.com/yachen4ever/ModelApiTester/releases) 下载对应平台的安装包：
+前往 [Releases](https://github.com/yachen4ever/ModelApiTester/releases) 下载对应平台的可执行文件（**单文件，无需安装**）：
 
 | 文件 | 平台 |
 |------|------|
-| `mat-desktop_*_x64_en-US.msi` | Windows x86_64 |
-| `mat-desktop_*_aarch64.dmg` | macOS Apple Silicon |
-| `mat-desktop_*_amd64.deb` / `.AppImage` | Linux x86_64 |
+| `mat-desktop-windows-x64.exe` | Windows x86_64 |
+| `mat-desktop-darwin-arm64` | macOS Apple Silicon |
+| `mat-desktop-darwin-x64` | macOS Intel |
+| `mat-desktop-linux-x64` | Linux x86_64 |
 
-安装后直接双击运行，数据存储在系统数据目录下，无需配置服务器。
+下载后直接双击运行，数据存储在 `~/.mat-desktop/` 目录下，无需配置服务器。
+
+> **说明**：自 v0.5.3 起桌面版改为单可执行文件（不生成 msi/dmg/deb 安装包），
+> 数据目录固定为 `~/.mat-desktop/model_api_tester.db`，绿色分发、随拷随用。
 
 <!-- 截图占位 -->
 
@@ -255,7 +262,9 @@ ModelApiTester/
 ├── frontend/                     # Vite + Vue 3 前端工程
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── index.html
+│   ├── index.html             # favicon 指向 app-icon.svg
+│   ├── public/
+│   │   └── app-icon.svg        # 应用图标源文件（1024×1024）
 │   └── src/
 │       ├── main.js               # Vue 挂载入口
 │       ├── App.vue               # 根布局（主题/语言/会话状态）
@@ -264,6 +273,7 @@ ModelApiTester/
 │       ├── style.css             # Tailwind v4 + 自定义样式
 │       ├── components/           # Vue 组件
 │       │   ├── ChatPanel.vue      #   聊天区 + 流式输出 + 预设提示词面板 + 发送逻辑
+│       │   ├── AboutDialog.vue     #   关于弹窗（更新检测 + 链接 + 版权）
 │       │   ├── ConversationList.vue #  对话列表
 │       │   ├── ModelConfig.vue     #   模型配置面板
 │       │   ├── MessageBubble.vue   #   消息气泡 + Markdown 渲染
@@ -274,7 +284,7 @@ ModelApiTester/
 │           └── useUtils.js         #   工具函数 + 请求体构建
 ├── .github/
 │   └── workflows/
-│       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包 + Tauri 安装包）
+│       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包 + Tauri 单可执行）
 ├── README.md
 ├── README_en.md
 ├── CHANGELOG.md
