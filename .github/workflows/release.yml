@@ -127,7 +127,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p tauri-bin
-          BIN="mat-desktop"
+          BIN="mat-tauri-app"
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then BIN="$BIN.exe"; fi
           cp "target/${{ matrix.target }}/release/$BIN" "tauri-bin/$BIN"
           ls -lh tauri-bin/
