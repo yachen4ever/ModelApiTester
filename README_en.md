@@ -1,46 +1,32 @@
-
 # ModelApiTester
 
 English | [中文](./README.md)
 
-A lightweight LLM API testing tool with multimodal chat, image/file upload, streaming output, response timing stats, and persistent conversations & model configs.
+A lightweight LLM API testing tool with multimodal chat, streaming output, response timing stats, and persistent conversations & model configs.
 
-Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint -> send a message -> see the result."
+Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint → send a message → see the result."
+
+![Model API Tester Screenshot](./docs/screenshot.png)
 
 ## Features
 
-- **Multi-API type support** — Built-in OpenAI / Anthropic / Google Gemini / other mainstream API formats, auto-adapts request body and response parsing
-- **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
-- **Preset test prompts** — 32 curated prompts across 8 capability categories (reasoning / coding / math / instruction following / creative writing / multilingual / knowledge / safety), one-click fill into the input box, ideal for quickly comparing model capabilities
-- **Unified app icon** — Indigo gradient rounded square + white lightning bolt, consistent across Web favicon and desktop
-- **About dialog** — Chrome-like about page: brand area + update checker (auto-checks GitHub latest release, one-click jump to download when outdated) + GitHub / Changelog / Credits links
-- **Single-file desktop executable** — Tauri build no longer bundles installers; one portable binary, data stored in `~/.mat-desktop/`
-- **Response timing** — Each reply shows elapsed time, token usage, and model name; streaming mode breaks down prefill/decode timing and tok/s separately
-- **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
-- **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
-- **Math formula rendering** — Integrated KaTeX; supports `$...$` inline and `$$...$$` block-level formulas, perfectly renders LaTeX math expressions
-- **Video playback** — Video links in Markdown (`.mp4`/`.webm` extensions or `data:video` URIs) are automatically rendered as playable `<video>` tags
-- **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
-- **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
-- **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode), defaults to off
-- **System prompt** — Optional system prompt field in the sidebar
-- **Persistent model configs** — Save/switch multiple configs; Base URL / API Key / model name / API type stored in SQLite
-- **Per-conversation model memory** — Current model config is auto-saved per conversation and restored when reopening
-- **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh; one-click clear all conversations
-- **i18n** — Chinese/English toggle, defaults to browser/OS language
-- **Dark/light theme** — One-click toggle, preference saved to localStorage
-- **Claude support** — Auto-detects Claude models, adapts `/v1/messages` format + image source format
-- **Google Gemini support** — `contents[]` format, `systemInstruction`, `inlineData` images, adjacent same-role merge
-- **Auto URL dedup** — Smart deduplication when Base URL contains `/v1`, no `/v1/v1/...`
+- **Multi-API types** — OpenAI / Anthropic / Google Gemini / other mainstream formats, auto-adapts request body and response parsing
+- **Streaming output** — Supports OpenAI / Anthropic / Gemini SSE streaming formats, character-by-character output with Markdown render on completion
+- **Response timing** — Each reply shows prefill time, decode time, generated token count, generation speed (tok/s), total elapsed time, and model name
+- **Multimodal upload** — Multi-image select/preview (OpenAI vision format), file attachments (Claude document block), double-click to zoom images (Viewer.js)
+- **Markdown + formulas** — markdown-it rendering + KaTeX math formulas (`$...$` inline / `$$...$$` block) + auto-play video links
+- **Preset test prompts** — 32 curated prompts across 8 capability categories, one-click fill, ideal for comparing model capabilities
+- **Persistent sessions & configs** — Multi-conversation management with SQLite storage; save/switch multiple model configs; auto-saves current config per message
+- **Model list fetch** — Pull available models from `/v1/models` with live filtering
+- **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode)
+- **i18n + dark/light theme** — Auto-detects browser/OS language; dark/light theme toggle
 
 ## Three Usage Modes
-
-ModelApiTester offers three deployment/usage modes, all sharing the same Rust core and Vite frontend:
 
 | Mode | Description | Use case |
 |------|-------------|----------|
 | **Server** | Rust binary + frontend static files, accessed via browser | Server deployment, team sharing |
-| **Desktop app** | Tauri-packaged native desktop application | Local use, no server needed |
+| **Desktop app** | Tauri native desktop app, single portable binary | Local use, no server needed |
 | **Build from source** | cargo + npm local build | Development, customization |
 
 ---
@@ -56,8 +42,6 @@ Download the files for your platform from [Releases](https://github.com/yachen4e
 | `mat-server-macos-arm64` | macOS Apple Silicon |
 | `mat-server-macos-x64` | macOS Intel |
 | `mat-frontend-dist.zip` | Frontend static files (all platforms) |
-
-**Deployment steps:**
 
 ```bash
 # 1. Create deployment directory
@@ -87,14 +71,17 @@ Options:
       --port <PORT>          Listen port [default: 52081]
       --db-path <DB_PATH>    SQLite database path [default: ./model_api_tester.db]
       --static-dir <DIR>     Frontend static files directory [default: crates/http-server/static]
-  -h, --help                 Show help
-  -V, --version              Show version
+   -h, --help                 Show help
+   -V, --version              Show version
 ```
 
-All options are passed via CLI flags only; **environment variables are not supported** (to avoid common variables like `HOST`/`PORT` being accidentally set by external environments).
+All options are passed via CLI flags only; environment variables are not supported.
+
+- `--static-dir`: Frontend static files directory. The backend has a built-in ServeDir to serve frontend pages directly. If using nginx to host the frontend, this option is not needed.
+- `--db-path`: SQLite database location, useful for centralizing data management.
 
 ```bash
-# Expose externally + custom port and database path
+# Expose externally + custom port and data directory
 ./mat-server --host 0.0.0.0 --port 8080 --db-path /data/mat.db --static-dir /var/www/mat
 ```
 
@@ -107,8 +94,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/mat-server
-ExecStart=/opt/mat-server/mat-server --host 127.0.0.1 --port 52081 --db-path /opt/mat-server/model_api_tester.db --static-dir /opt/mat-server/static
+WorkingDirectory=/opt/mat
+ExecStart=/opt/mat/mat-server --host 127.0.0.1 --port 52081 --db-path /opt/mat/model_api_tester.db
 Restart=always
 RestartSec=3
 
@@ -120,14 +107,14 @@ nginx serves frontend static files directly and only proxies `/api/` to the Rust
 
 ```nginx
 # Frontend static files
-location /api-tester-rust/ {
-    alias /var/www/api-tester-rust/;
+location /mat/ {
+    alias /var/www/mat/;
     index index.html;
-    try_files $uri $uri/ /api-tester-rust/index.html =404;
+    try_files $uri $uri/ /mat/index.html =404;
 }
 
 # API proxy to Rust backend
-location /api-tester-rust/api/ {
+location /mat/api/ {
     proxy_pass http://127.0.0.1:52081/api/;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -142,7 +129,7 @@ location /api-tester-rust/api/ {
 }
 ```
 
-> In nginx deployment mode, the backend does not need `--static-dir` (nginx handles static files), but `--db-path` is still required.
+> In nginx mode, the backend does not need `--static-dir` (nginx handles static files), but `--db-path` is still required.
 
 ---
 
@@ -159,18 +146,11 @@ Download the executable for your platform from [Releases](https://github.com/yac
 
 Download and launch directly — data is stored in `~/.mat-desktop/`, no server configuration needed.
 
-> **Note**: Since v0.5.3 the desktop build is a single executable (no msi/dmg/deb installers).
-> The data directory is fixed to `~/.mat-desktop/model_api_tester.db` for portable green distribution.
-
-![Model API Tester Screenshot](./docs/screenshot.png)
-
 ---
 
 ### Mode 3: Build from Source
 
-**Prerequisites:**
-- Rust 1.75+ (install via `rustup`)
-- Node.js 18+ (for frontend build)
+**Prerequisites:** Rust 1.75+, Node.js 18+
 
 ```bash
 # 1. Build frontend
@@ -202,24 +182,42 @@ Open `http://localhost:5173` in your browser. Frontend code changes hot-reload i
 
 ---
 
-## Tech Stack
+## Architecture
 
-**Backend (shared core):**
-- Rust + axum 0.8 (HTTP server)
-- rusqlite (bundled SQLite)
-- tower-http (static file serving + CORS)
-- clap (CLI argument parsing)
+```
+ModelApiTester/
+├── crates/
+│   ├── core/              # Shared business logic (server + desktop)
+│   │   └── src/
+│   │       ├── lib.rs     # Module exports + VERSION
+│   │       ├── models.rs  # Data structures + DTOs
+│   │       └── db.rs      # SQLite schema/migration/CRUD
+│   ├── http-server/       # axum HTTP server
+│   │   └── src/main.rs    # CLI args + routes + static file serving
+│   └── tauri-app/         # Tauri desktop app (reuses core)
+│       └── src/lib.rs     # IPC routing (api_request command)
+├── frontend/              # Vite + Vue 3 frontend project
+│   └── src/
+│       ├── components/    # Vue components
+│       │   ├── ChatPanel.vue       # Chat area + streaming + preset prompts
+│       │   ├── ModelConfig.vue     # Model config panel
+│       │   ├── MessageBubble.vue   # Message bubble + Markdown render
+│       │   └── StreamBubble.vue    # Streaming output bubble
+│       └── composables/   # Vue Composition utilities
+│           ├── useApi.js           # API client
+│           ├── useStream.js        # SSE streaming response parser
+│           ├── useUtils.js         # Request builder + utilities
+│           └── mdRender.js         # Markdown renderer (markdown-it + KaTeX + video)
+└── .github/workflows/     # GitHub Actions CI/CD
+```
 
-**Frontend:**
-- Vue 3 (Composition API + `<script setup>`)
-- Vite 6 + Tailwind CSS v4
-- markdown-it + KaTeX (Markdown rendering + LaTeX math formulas)
-- Viewer.js (image viewer)
-- Font Awesome (icons)
-- Native fetch (API requests)
+**Tech stack:**
 
-**Desktop:**
-- Tauri 2 (reuses core + frontend)
+| Layer | Technology |
+|-------|------------|
+| Backend | Rust + axum + rusqlite + clap |
+| Frontend | Vue 3 + Vite 6 + Tailwind CSS v4 + markdown-it + KaTeX |
+| Desktop | Tauri 2 (reuses core + frontend) |
 
 ## API
 
@@ -233,68 +231,13 @@ Open `http://localhost:5173` in your browser. Frontend code changes hot-reload i
 | GET/DELETE | `/api/conversations/:id/messages` | List / clear messages |
 | POST | `/api/messages` | Save message (with images/files) |
 
-## Project Structure
-
-```
-ModelApiTester/
-├── Cargo.toml                    # Rust workspace root
-├── Cargo.lock
-├── crates/
-│   ├── core/                     # Shared business logic (server + desktop)
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs            # Module exports + VERSION
-│   │       ├── models.rs         # Data structures + DTOs
-│   │       └── db.rs             # SQLite schema/migration/CRUD
-│   ├── http-server/              # axum HTTP server
-│   │   ├── Cargo.toml
-│   │   ├── src/
-│   │   │   └── main.rs           # CLI args + routes + ServeDir
-│   │   └── static/               # Vite build output (gitignored)
-│   └── tauri-app/                # Tauri desktop app (reuses core)
-│       ├── Cargo.toml
-│       ├── tauri.conf.json
-│       └── src/
-│           ├── lib.rs            # IPC routing (api_request command)
-│           └── main.rs           # Tauri entry
-├── frontend/                     # Vite + Vue 3 frontend project
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── index.html
-│   └── src/
-│       ├── main.js               # Vue mount entry
-│       ├── App.vue               # Root layout (theme/language/conversation state)
-│       ├── i18n.js               # zh/en i18n (Vue reactive)
-│       ├── style.css             # Tailwind v4 + custom styles
-│       ├── components/           # Vue components
-│       │   ├── ChatPanel.vue      #   Chat area + streaming + preset prompt panel + send logic
-│       │   ├── ConversationList.vue #  Conversation list
-│       │   ├── ModelConfig.vue     #   Model config panel
-│       │   ├── MessageBubble.vue   #   Message bubble + Markdown render
-│       │   └── StreamBubble.vue    #   Streaming output bubble
-│       └── composables/          # Vue Composition utilities
-│           ├── useApi.js           #   API client (fetch / Tauri invoke)
-│           ├── useStream.js        #   SSE streaming response parser
-│           ├── useUtils.js         #   Utility functions + request builder
-│           └── mdRender.js         #   Shared Markdown renderer (markdown-it + KaTeX + video)
-├── .github/
-│   └── workflows/
-│       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri single executable)
-├── README.md
-├── README_en.md
-├── CHANGELOG.md
-└── .gitignore
-```
-
-> The legacy Bun version is archived in the `bun_legacy_archived` branch.
-
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Credits
 
-This project started as a fork of [openai-api-tester](https://github.com/RunningFelix/openai-api-tester) by [@RunningFelix](https://github.com/RunningFelix) (MIT License). It has since been rewritten first as a Bun + SQLite engineering version, then as a Rust + Vite rewrite, with image upload, response timing, context toggle, UI redesign, multi-API type support, and more.
+This project started as a fork of [openai-api-tester](https://github.com/RunningFelix/openai-api-tester) (MIT License), later rewritten as a Bun + SQLite version, and finally refactored to Rust + Vue 3.
 
 ## License
 
