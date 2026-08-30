@@ -4,6 +4,13 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.5.1] — 2026-08-30
+
+### Bug Fixes
+- **Tauri 桌面版图标全部不显示** — v0.5.0 将 Font Awesome 从 CDN 改为 npm 本地打包后，`tauri.conf.json` 的 CSP `font-src` 仍只允许 `https://cdnjs.cloudflare.com`，导致 Tauri WebView 加载本地图标字体（`/assets/fa-*.woff2`）时被 CSP 拦截，所有图标显示为占位方块。已修复为 `font-src 'self' data:`，并同步清理 `script-src`/`style-src` 中残留的 cdnjs 引用
+
+---
+
 ## [v0.5.0] — 2026-08-30
 
 ### Breaking Changes
