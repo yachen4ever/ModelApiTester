@@ -4,6 +4,7 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
+use clap::Parser;
 use mat_core::{CreateConversation, CreateMessage, CreateModelConfig, Database, UpdateConversation, UpdateModelConfig, VERSION};
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -23,9 +24,30 @@ impl IntoResponse for AppError {
     }
 }
 
+/// Model API Tester — 轻量级大模型 API 测试工具
+#[derive(Parser, Debug)]
+#[command(version = VERSION, about = "Lightweight LLM API testing tool")]
+struct Args {
+    /// 监听地址
+    #[arg(long, env = "HOST", default_value = "127.0.0.1")]
+    host: String,
+
+    /// 监听端口
+    #[arg(long, env = "PORT", default_value_t = 52081)]
+    port: u16,
+
+    /// SQLite 数据库路径
+    #[arg(long, env = "DB_PATH", default_value = "./model_api_tester.db")]
+    db_path: String,
+
+    /// 前端静态文件目录
+    #[arg(long, env = "STATIC_DIR", default_value = "crates/http-server/static")]
+    static_dir: String,
+}
+
 // ============================ 路由 ============================
 
-pub fn build_router(db: Database) -> Router {
+pub fn build_router(db: Database, static_dir: &str) -> Router {
     let state = AppState {
         db: Arc::new(db),
     };
@@ -38,7 +60,7 @@ pub fn build_router(db: Database) -> Router {
         .route("/api/conversations/{id}/messages", get(list_messages).delete(delete_messages))
         .route("/api/messages", post(create_message))
         .route("/api/health", get(health))
-        .fallback_service(ServeDir::new("crates/http-server/static"))
+        .fallback_service(ServeDir::new(static_dir))
         .layer(CorsLayer::very_permissive())
         .with_state(state)
 }
@@ -118,17 +140,12 @@ async fn create_message(State(s): State<AppState>, Json(data): Json<CreateMessag
 
 #[tokio::main]
 async fn main() {
-    let db_path = std::env::var("DB_PATH").unwrap_or_else(|_| "./model_api_tester.db".to_string());
-    let port: u16 = std::env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(52081);
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let args = Args::parse();
 
-    let db = Database::open(&db_path).expect("Failed to open database");
-    let router = build_router(db);
+    let db = Database::open(&args.db_path).expect("Failed to open database");
+    let router = build_router(db, &args.static_dir);
 
-    let addr = format!("{}:{}", host, port);
+    let addr = format!("{}:{}", args.host, args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.expect("Failed to bind");
     println!("Model API Tester v{} listening on http://{}", VERSION, addr);
     axum::serve(listener, router).await.expect("Server error");

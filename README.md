@@ -2,20 +2,19 @@
 
 [English](./README_en.md) | 中文
 
-轻量级大模型 API 测试工具，Rust 后端 + Vite 前端，单二进制部署。支持多模态对话、图片/文件上传、响应耗时统计、会话与模型配置持久化。
+轻量级大模型 API 测试工具，支持多模态对话、图片/文件上传、流式输出、响应耗时统计、会话与模型配置持久化。
 
 专为个人/团队测试 API 可用性 + 保管 API Key 设计，不追求对话产品级体验，只做"填地址 → 发消息 → 看结果"。
 
 ## 特性
 
-- **单二进制部署** — Rust 编译为原生可执行程序（Linux / Windows / macOS），SQLite 存储，无需任何运行时
 - **多 API 类型支持** — 内置 OpenAI / Anthropic / Google Gemini / 其他主流 API 格式，自动适配请求体与响应解析
-- **模型列表拉取** — 点击模型输入框刷新按钮，从接口 `/v1/models` 拉取可用模型列表，支持实时筛选
-- **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
+- **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标，流结束后自动 Markdown 渲染
+- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名；流式模式下拆分 prefill/decode 各自耗时与 tok/s
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
 - **图片双击放大** — 集成 Viewer.js，双击聊天图片打开查看器，支持缩放/旋转/翻转/下载
-- **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名（位于气泡下方）；流式模式下拆分 prefill/decode 各自耗时与 tok/s
-- **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标，流结束后自动 Markdown 渲染
+- **模型列表拉取** — 点击模型输入框刷新按钮，从接口 `/v1/models` 拉取可用模型列表，支持实时筛选
+- **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
 - **上下文开关** — 一键切换是否携带历史上下文（关闭 = 纯单轮测试模式），默认关闭
 - **系统提示词** — 侧边栏可选填写 system prompt
 - **模型配置持久化** — 多个配置可保存/切换，Base URL / API Key / 模型名 / API 类型存入 SQLite
@@ -23,101 +22,81 @@
 - **会话持久化** — 多会话列表，聊天记录（含图片）存 SQLite，刷新不丢；支持一键清空全部对话
 - **i18n 国际化** — 中英文切换，默认按浏览器/OS 语言自动检测
 - **亮暗主题** — 亮色/暗色一键切换，偏好本地存储
-- **Tauri 桌面版** — 同一套 Rust core + Vite 前端，打包为原生桌面应用（.msi / .dmg / .AppImage）
 - **Claude 支持** — 自动识别 Claude 模型，适配 `/v1/messages` 格式 + 图片 source 格式
 - **Google Gemini 支持** — `contents[]` 格式、`systemInstruction`、`inlineData` 图片、相邻同角色消息合并
 - **自动 URL 去重** — Base URL 含 `/v1` 时智能去重，不会拼出 `/v1/v1/...`
 
-## 技术栈
+## 三种使用方式
 
-- **Rust** — 后端语言
-- **axum** — HTTP 服务器框架
-- **rusqlite**（bundled）— SQLite 数据存储（模型配置、会话、消息、图片）
-- **tower-http** — 静态文件服务（ServeDir）+ CORS
-- **Vite 6** — 前端构建工具
-- **Tailwind CSS v4** — 界面样式 + 暗色模式
-- **showdown.js** — Markdown 渲染
-- **Viewer.js** — 图片查看器（缩放/旋转/翻转/下载）
-- **原生 fetch** — 请求 OpenAI / Claude / Gemini 兼容接口
+ModelApiTester 提供三种部署/使用方式，共享同一套 Rust core 业务逻辑和同一份 Vite 前端：
 
-## 下载使用
+| 方式 | 说明 | 适用场景 |
+|------|------|----------|
+| **后端服务器** | Rust 编译为单二进制 + 前端静态文件，浏览器访问 | 服务器部署、团队共用 |
+| **桌面应用** | Tauri 打包为原生桌面应用 | 本地使用、无需服务器 |
+| **从源码编译** | cargo + npm 本地构建开发 | 开发调试、自定义修改 |
 
-### 方式一：下载预编译二进制（推荐）
+---
+
+### 方式一：后端服务器
 
 前往 [Releases](https://github.com/yachen4ever/ModelApiTester/releases) 下载对应平台的文件：
 
 | 文件 | 平台 |
 |------|------|
-| `model-api-tester-linux-x64` | Linux x86_64 |
-| `model-api-tester-windows-x64.exe` | Windows x86_64 |
-| `model-api-tester-macos-arm64` | macOS Apple Silicon |
-| `model-api-tester-macos-x64` | macOS Intel |
-| `frontend-dist.zip` | 前端静态文件（所有平台通用） |
-| Tauri 安装包 | 桌面版应用（.msi / .dmg / .AppImage） |
+| `mat-server-linux-x64` | Linux x86_64 |
+| `mat-server-windows-x64.exe` | Windows x86_64 |
+| `mat-server-macos-arm64` | macOS Apple Silicon |
+| `mat-server-macos-x64` | macOS Intel |
+| `mat-frontend-dist.zip` | 前端静态文件（所有平台通用） |
 
 **部署步骤：**
 
 ```bash
 # 1. 创建部署目录
-mkdir -p ~/model-api-tester/crates/http-server/static
-cd ~/model-api-tester
+mkdir -p ~/mat-server/static
+cd ~/mat-server
 
 # 2. 放入二进制
-cp ~/Downloads/model-api-tester-linux-x64 ./model-api-tester
-chmod +x model-api-tester
+cp ~/Downloads/mat-server-linux-x64 ./mat-server
+chmod +x mat-server
 
 # 3. 解压前端到 static 目录
-unzip ~/Downloads/frontend-dist.zip -d crates/http-server/static/
+unzip ~/Downloads/mat-frontend-dist.zip -d static/
 
 # 4. 运行
-./model-api-tester
+./mat-server --static-dir ./static
 ```
 
 浏览器打开 `http://localhost:52081` 即可使用。
 
-> **注意**：前端静态文件必须放在相对于**工作目录**的 `crates/http-server/static/` 路径下，即与上述目录结构一致。
+**CLI 参数：**
 
-### 方式二：从源码编译
+```
+Usage: mat-server [OPTIONS]
 
-**环境要求：**
-- Rust 1.75+（`rustup` 安装）
-- Node.js 18+（前端构建）
-
-```bash
-# 1. 构建前端
-cd frontend
-npm install
-npm run build        # 产物输出到 crates/http-server/static/
-
-# 2. 构建后端
-cd ..
-cargo build --release
-
-# 3. 运行
-./target/release/model-api-tester
+Options:
+      --host <HOST>          监听地址 [默认: 127.0.0.1]
+      --port <PORT>          监听端口 [默认: 52081]
+      --db-path <DB_PATH>    SQLite 数据库路径 [默认: ./model_api_tester.db]
+      --static-dir <DIR>     前端静态文件目录 [默认: crates/http-server/static]
+  -h, --help                 显示帮助
+  -V, --version              显示版本
 ```
 
-## 配置
-
-通过环境变量配置：
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `PORT` | `52081` | 监听端口 |
-| `HOST` | `127.0.0.1` | 监听地址（对外暴露设为 `0.0.0.0`） |
-| `DB_PATH` | `./model_api_tester.db` | SQLite 数据库路径 |
+所有参数也支持环境变量（`HOST`/`PORT`/`DB_PATH`/`STATIC_DIR`），CLI 参数优先级高于环境变量。
 
 ```bash
-# 示例
+# 对外暴露 + 自定义端口和数据库路径
+./mat-server --host 0.0.0.0 --port 8080 --db-path /data/mat.db --static-dir /var/www/mat
+
+# 或通过环境变量
 export HOST=0.0.0.0
-export PORT=52081
-export DB_PATH=/opt/model-api-tester/model_api_tester.db
-./model-api-tester
+export PORT=8080
+./mat-server
 ```
 
-## 生产部署
-
-### systemd 服务
+**生产部署（systemd + nginx）：**
 
 ```ini
 [Unit]
@@ -126,21 +105,16 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/model-api-tester
-ExecStart=/opt/model-api-tester/model-api-tester
+WorkingDirectory=/opt/mat-server
+ExecStart=/opt/mat-server/mat-server --host 127.0.0.1 --port 52081 --db-path /opt/mat-server/model_api_tester.db --static-dir /opt/mat-server/static
 Restart=always
 RestartSec=3
-Environment=HOST=127.0.0.1
-Environment=PORT=52081
-Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-### Nginx 反向代理（前端静态 + API 反代分离）
-
-生产部署推荐 nginx 直接服务前端静态文件，仅反代 `/api/` 到 Rust 后端：
+nginx 直接服务前端静态文件，仅反代 `/api/` 到 Rust 后端：
 
 ```nginx
 # 前端静态文件
@@ -166,11 +140,47 @@ location /api-tester-rust/api/ {
 }
 ```
 
-> 前端构建时需设 `base: '/api-tester-rust/'`（`vite.config.js` 已内置），资源路径会自动带上前缀。
+> nginx 部署模式下后端不需要 `--static-dir`（nginx 负责静态文件），但仍需指定 `--db-path`。
 
-## 本地开发
+---
 
-前后端分别启动，Vite dev server 代理 API 请求到 Rust 后端：
+### 方式二：桌面应用（Tauri）
+
+前往 [Releases](https://github.com/yachen4ever/ModelApiTester/releases) 下载对应平台的安装包：
+
+| 文件 | 平台 |
+|------|------|
+| `mat-desktop_*_x64_en-US.msi` | Windows x86_64 |
+| `mat-desktop_*_aarch64.dmg` | macOS Apple Silicon |
+| `mat-desktop_*_amd64.deb` / `.AppImage` | Linux x86_64 |
+
+安装后直接双击运行，数据存储在系统数据目录下，无需配置服务器。
+
+<!-- 截图占位 -->
+
+---
+
+### 方式三：从源码编译
+
+**环境要求：**
+- Rust 1.75+（`rustup` 安装）
+- Node.js 18+（前端构建）
+
+```bash
+# 1. 构建前端
+cd frontend
+npm install
+npm run build        # 产物输出到 crates/http-server/static/
+
+# 2. 构建后端
+cd ..
+cargo build --release
+
+# 3. 运行
+./target/release/model-api-tester
+```
+
+**本地开发模式**（前后端分别启动，热更新）：
 
 ```bash
 # 终端 1：启动后端（默认 127.0.0.1:52081）
@@ -183,6 +193,25 @@ npm run dev
 ```
 
 浏览器打开 `http://localhost:5173`，修改前端代码即时热更新。
+
+---
+
+## 技术栈
+
+**后端（共享 core）：**
+- Rust + axum 0.8（HTTP 服务器）
+- rusqlite（bundled SQLite）
+- tower-http（静态文件服务 + CORS）
+- clap（CLI 参数解析）
+
+**前端：**
+- Vite 6 + Tailwind CSS v4
+- showdown.js（Markdown 渲染）
+- Viewer.js（图片查看器）
+- 原生 fetch（请求 API 兼容接口）
+
+**桌面版：**
+- Tauri 2（复用 core + 前端）
 
 ## API
 
@@ -203,7 +232,7 @@ ModelApiTester/
 ├── Cargo.toml                    # Rust workspace 根配置
 ├── Cargo.lock
 ├── crates/
-│   ├── core/                     # 共享业务逻辑
+│   ├── core/                     # 共享业务逻辑（后端 + 桌面版复用）
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs            # 模块导出 + VERSION
@@ -212,9 +241,14 @@ ModelApiTester/
 │   ├── http-server/              # axum HTTP 服务器
 │   │   ├── Cargo.toml
 │   │   ├── src/
-│   │   │   └── main.rs           # 路由 + ServeDir 静态文件
+│   │   │   └── main.rs           # CLI 参数 + 路由 + ServeDir
 │   │   └── static/               # Vite 构建产物（gitignore）
 │   └── tauri-app/                # Tauri 桌面版（复用 core）
+│       ├── Cargo.toml
+│       ├── tauri.conf.json
+│       └── src/
+│           ├── lib.rs            # IPC 路由（api_request 命令）
+│           └── main.rs           # Tauri 入口
 ├── frontend/                     # Vite 前端工程
 │   ├── package.json
 │   ├── vite.config.js

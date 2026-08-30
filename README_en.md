@@ -2,20 +2,19 @@
 
 English | [中文](./README.md)
 
-A lightweight LLM API testing tool with a Rust backend and Vite frontend, deployable as a single binary. Supports multimodal chat, image/file upload, response timing stats, and persistent conversations & model configs.
+A lightweight LLM API testing tool with multimodal chat, image/file upload, streaming output, response timing stats, and persistent conversations & model configs.
 
 Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint -> send a message -> see the result."
 
 ## Features
 
-- **Single-binary deployment** — Rust compiles to a native executable (Linux / Windows / macOS), SQLite storage, no runtime required
 - **Multi-API type support** — Built-in OpenAI / Anthropic / Google Gemini / other mainstream API formats, auto-adapts request body and response parsing
-- **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
-- **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
+- **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
+- **Response timing** — Each reply shows elapsed time, token usage, and model name; streaming mode breaks down prefill/decode timing and tok/s separately
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
 - **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
-- **Response timing** — Each reply shows elapsed time, token usage, and model name (below the bubble); streaming mode breaks down prefill/decode timing and tok/s separately
-- **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
+- **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
+- **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
 - **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode), defaults to off
 - **System prompt** — Optional system prompt field in the sidebar
 - **Persistent model configs** — Save/switch multiple configs; Base URL / API Key / model name / API type stored in SQLite
@@ -23,101 +22,81 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **Persistent conversations** — Multi-conversation list, chat history (including images) stored in SQLite, survives refresh; one-click clear all conversations
 - **i18n** — Chinese/English toggle, defaults to browser/OS language
 - **Dark/light theme** — One-click toggle, preference saved to localStorage
-- **Tauri desktop app** — Same Rust core + Vite frontend, packaged as a native desktop application (.msi / .dmg / .AppImage)
 - **Claude support** — Auto-detects Claude models, adapts `/v1/messages` format + image source format
 - **Google Gemini support** — `contents[]` format, `systemInstruction`, `inlineData` images, adjacent same-role merge
 - **Auto URL dedup** — Smart deduplication when Base URL contains `/v1`, no `/v1/v1/...`
 
-## Tech Stack
+## Three Usage Modes
 
-- **Rust** — Backend language
-- **axum** — HTTP server framework
-- **rusqlite** (bundled) — SQLite data storage (model configs, conversations, messages, images)
-- **tower-http** — Static file serving (ServeDir) + CORS
-- **Vite 6** — Frontend build tool
-- **Tailwind CSS v4** — UI styling + dark mode
-- **showdown.js** — Markdown rendering
-- **Viewer.js** — Image viewer (zoom/rotate/flip/download)
-- **Native fetch** — Requests to OpenAI / Claude / Gemini compatible endpoints
+ModelApiTester offers three deployment/usage modes, all sharing the same Rust core and Vite frontend:
 
-## Download & Usage
+| Mode | Description | Use case |
+|------|-------------|----------|
+| **Server** | Rust binary + frontend static files, accessed via browser | Server deployment, team sharing |
+| **Desktop app** | Tauri-packaged native desktop application | Local use, no server needed |
+| **Build from source** | cargo + npm local build | Development, customization |
 
-### Option 1: Download Pre-built Binaries (Recommended)
+---
 
-Go to [Releases](https://github.com/yachen4ever/ModelApiTester/releases) and download the files for your platform:
+### Mode 1: Server
+
+Download the files for your platform from [Releases](https://github.com/yachen4ever/ModelApiTester/releases):
 
 | File | Platform |
 |------|----------|
-| `model-api-tester-linux-x64` | Linux x86_64 |
-| `model-api-tester-windows-x64.exe` | Windows x86_64 |
-| `model-api-tester-macos-arm64` | macOS Apple Silicon |
-| `model-api-tester-macos-x64` | macOS Intel |
-| `frontend-dist.zip` | Frontend static files (all platforms) |
-| Tauri installers | Desktop app (.msi / .dmg / .AppImage) |
+| `mat-server-linux-x64` | Linux x86_64 |
+| `mat-server-windows-x64.exe` | Windows x86_64 |
+| `mat-server-macos-arm64` | macOS Apple Silicon |
+| `mat-server-macos-x64` | macOS Intel |
+| `mat-frontend-dist.zip` | Frontend static files (all platforms) |
 
 **Deployment steps:**
 
 ```bash
 # 1. Create deployment directory
-mkdir -p ~/model-api-tester/crates/http-server/static
-cd ~/model-api-tester
+mkdir -p ~/mat-server/static
+cd ~/mat-server
 
 # 2. Place the binary
-cp ~/Downloads/model-api-tester-linux-x64 ./model-api-tester
-chmod +x model-api-tester
+cp ~/Downloads/mat-server-linux-x64 ./mat-server
+chmod +x mat-server
 
 # 3. Extract frontend to static directory
-unzip ~/Downloads/frontend-dist.zip -d crates/http-server/static/
+unzip ~/Downloads/mat-frontend-dist.zip -d static/
 
 # 4. Run
-./model-api-tester
+./mat-server --static-dir ./static
 ```
 
 Open `http://localhost:52081` in your browser.
 
-> **Note**: Frontend static files must be placed at `crates/http-server/static/` relative to the **working directory**.
+**CLI options:**
 
-### Option 2: Build from Source
+```
+Usage: mat-server [OPTIONS]
 
-**Prerequisites:**
-- Rust 1.75+ (install via `rustup`)
-- Node.js 18+ (for frontend build)
-
-```bash
-# 1. Build frontend
-cd frontend
-npm install
-npm run build        # Output goes to crates/http-server/static/
-
-# 2. Build backend
-cd ..
-cargo build --release
-
-# 3. Run
-./target/release/model-api-tester
+Options:
+      --host <HOST>          Listen address [default: 127.0.0.1]
+      --port <PORT>          Listen port [default: 52081]
+      --db-path <DB_PATH>    SQLite database path [default: ./model_api_tester.db]
+      --static-dir <DIR>     Frontend static files directory [default: crates/http-server/static]
+  -h, --help                 Show help
+  -V, --version              Show version
 ```
 
-## Configuration
-
-Configure via environment variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `52081` | Listen port |
-| `HOST` | `127.0.0.1` | Listen address (use `0.0.0.0` for external access) |
-| `DB_PATH` | `./model_api_tester.db` | SQLite database path |
+All options also support environment variables (`HOST`/`PORT`/`DB_PATH`/`STATIC_DIR`). CLI flags take precedence over environment variables.
 
 ```bash
-# Example
+# Expose externally + custom port and database path
+./mat-server --host 0.0.0.0 --port 8080 --db-path /data/mat.db --static-dir /var/www/mat
+
+# Or via environment variables
 export HOST=0.0.0.0
-export PORT=52081
-export DB_PATH=/opt/model-api-tester/model_api_tester.db
-./model-api-tester
+export PORT=8080
+./mat-server
 ```
 
-## Production Deployment
-
-### systemd Service
+**Production deployment (systemd + nginx):**
 
 ```ini
 [Unit]
@@ -126,21 +105,16 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/model-api-tester
-ExecStart=/opt/model-api-tester/model-api-tester
+WorkingDirectory=/opt/mat-server
+ExecStart=/opt/mat-server/mat-server --host 127.0.0.1 --port 52081 --db-path /opt/mat-server/model_api_tester.db --static-dir /opt/mat-server/static
 Restart=always
 RestartSec=3
-Environment=HOST=127.0.0.1
-Environment=PORT=52081
-Environment=DB_PATH=/opt/model-api-tester/model_api_tester.db
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-### Nginx Reverse Proxy (Static Frontend + API Proxy)
-
-For production, nginx serves frontend static files directly and only proxies `/api/` to the Rust backend:
+nginx serves frontend static files directly and only proxies `/api/` to the Rust backend:
 
 ```nginx
 # Frontend static files
@@ -166,11 +140,47 @@ location /api-tester-rust/api/ {
 }
 ```
 
-> The frontend build uses `base: '/api-tester-rust/'` (built into `vite.config.js`), so asset paths are automatically prefixed.
+> In nginx deployment mode, the backend does not need `--static-dir` (nginx handles static files), but `--db-path` is still required.
 
-## Local Development
+---
 
-Start frontend and backend separately. The Vite dev server proxies API requests to the Rust backend:
+### Mode 2: Desktop App (Tauri)
+
+Download the installer for your platform from [Releases](https://github.com/yachen4ever/ModelApiTester/releases):
+
+| File | Platform |
+|------|----------|
+| `mat-desktop_*_x64_en-US.msi` | Windows x86_64 |
+| `mat-desktop_*_aarch64.dmg` | macOS Apple Silicon |
+| `mat-desktop_*_amd64.deb` / `.AppImage` | Linux x86_64 |
+
+Install and launch directly — data is stored in the system data directory, no server configuration needed.
+
+<!-- screenshot placeholder -->
+
+---
+
+### Mode 3: Build from Source
+
+**Prerequisites:**
+- Rust 1.75+ (install via `rustup`)
+- Node.js 18+ (for frontend build)
+
+```bash
+# 1. Build frontend
+cd frontend
+npm install
+npm run build        # Output goes to crates/http-server/static/
+
+# 2. Build backend
+cd ..
+cargo build --release
+
+# 3. Run
+./target/release/model-api-tester
+```
+
+**Local development** (start frontend and backend separately, with hot-reload):
 
 ```bash
 # Terminal 1: Start backend (default 127.0.0.1:52081)
@@ -183,6 +193,25 @@ npm run dev
 ```
 
 Open `http://localhost:5173` in your browser. Frontend code changes hot-reload instantly.
+
+---
+
+## Tech Stack
+
+**Backend (shared core):**
+- Rust + axum 0.8 (HTTP server)
+- rusqlite (bundled SQLite)
+- tower-http (static file serving + CORS)
+- clap (CLI argument parsing)
+
+**Frontend:**
+- Vite 6 + Tailwind CSS v4
+- showdown.js (Markdown rendering)
+- Viewer.js (image viewer)
+- Native fetch (API requests)
+
+**Desktop:**
+- Tauri 2 (reuses core + frontend)
 
 ## API
 
@@ -203,7 +232,7 @@ ModelApiTester/
 ├── Cargo.toml                    # Rust workspace root
 ├── Cargo.lock
 ├── crates/
-│   ├── core/                     # Shared business logic
+│   ├── core/                     # Shared business logic (server + desktop)
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs            # Module exports + VERSION
@@ -212,9 +241,14 @@ ModelApiTester/
 │   ├── http-server/              # axum HTTP server
 │   │   ├── Cargo.toml
 │   │   ├── src/
-│   │   │   └── main.rs           # Routes + ServeDir static files
+│   │   │   └── main.rs           # CLI args + routes + ServeDir
 │   │   └── static/               # Vite build output (gitignored)
 │   └── tauri-app/                # Tauri desktop app (reuses core)
+│       ├── Cargo.toml
+│       ├── tauri.conf.json
+│       └── src/
+│           ├── lib.rs            # IPC routing (api_request command)
+│           └── main.rs           # Tauri entry
 ├── frontend/                     # Vite frontend project
 │   ├── package.json
 │   ├── vite.config.js

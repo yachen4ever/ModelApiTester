@@ -4,6 +4,36 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.4.0] — 2026-08-30
+
+### Breaking Changes
+- **配置方式从环境变量改为 CLI 参数** — 新增 `--host`/`--port`/`--db-path`/`--static-dir` 命令行参数（clap），环境变量仍向后兼容（CLI 参数 > 环境变量 > 默认值）
+- **Release 产物文件名规范化** — 所有 release 产物统一 `mat-` 前缀命名
+
+### Features
+- **CLI 参数解析** — 引入 clap，支持 `--help` / `--version` 标准参数，`--static-dir` 可指定前端静态文件目录（默认 `crates/http-server/static`）
+- **Tauri productName 规范化** — 桌面版产物名从 `Model API Tester` 改为 `mat-desktop`
+
+### Infrastructure
+- `crates/http-server/src/main.rs` — main() 重构为 clap derive 结构体 + CLI 参数解析，`build_router` 新增 `static_dir` 参数
+- `Cargo.toml` — workspace.dependencies 新增 `clap = { version = "4", features = ["derive"] }`
+- `.github/workflows/release.yml` — artifact 重命名：`model-api-tester-*` → `mat-server-*`，`frontend-dist.zip` → `mat-frontend-dist.zip`
+- `crates/tauri-app/tauri.conf.json` — `productName` 改为 `mat-desktop`
+- `README.md` / `README_en.md` — 按三套架构（服务器 / 桌面版 / 源码编译）重组，更新 CLI 参数说明和产物名
+
+### Release Artifacts Renamed
+
+| 旧名 | 新名 |
+|------|------|
+| `model-api-tester-linux-x64` | `mat-server-linux-x64` |
+| `model-api-tester-windows-x64.exe` | `mat-server-windows-x64.exe` |
+| `model-api-tester-macos-arm64` | `mat-server-macos-arm64` |
+| `model-api-tester-macos-x64` | `mat-server-macos-x64` |
+| `frontend-dist.zip` | `mat-frontend-dist.zip` |
+| `Model API Tester_*.msi` 等 | `mat-desktop_*` 系列 |
+
+---
+
 ## [v0.3.2] — 2026-08-30
 
 ### Bug Fixes
