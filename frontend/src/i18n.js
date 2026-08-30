@@ -1,5 +1,7 @@
-// i18n 字典
-export const I18N = {
+// i18n 字典 — Vue 版本，提供 reactive 的 t() 函数
+import { ref, computed } from 'vue';
+
+const I18N = {
   zh: {
     app_title: 'Model API Tester',
     conversation_list: '对话列表',
@@ -120,6 +122,18 @@ export function getInitialLang() {
   return lang;
 }
 
-export function t(lang, key) {
-  return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+const currentLang = ref(getInitialLang());
+
+export function useI18n() {
+  const t = (key) => {
+    return (I18N[currentLang.value] && I18N[currentLang.value][key]) || I18N.en[key] || key;
+  };
+
+  const toggleLang = () => {
+    currentLang.value = currentLang.value === 'zh' ? 'en' : 'zh';
+    localStorage.setItem('lang', currentLang.value);
+    document.documentElement.lang = currentLang.value === 'zh' ? 'zh' : 'en';
+  };
+
+  return { currentLang, t, toggleLang, I18N };
 }

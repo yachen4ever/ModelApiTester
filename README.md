@@ -205,9 +205,11 @@ npm run dev
 - clap（CLI 参数解析）
 
 **前端：**
+- Vue 3（Composition API + `<script setup>`）
 - Vite 6 + Tailwind CSS v4
 - showdown.js（Markdown 渲染）
 - Viewer.js（图片查看器）
+- Font Awesome（图标）
 - 原生 fetch（请求 API 兼容接口）
 
 **桌面版：**
@@ -249,17 +251,25 @@ ModelApiTester/
 │       └── src/
 │           ├── lib.rs            # IPC 路由（api_request 命令）
 │           └── main.rs           # Tauri 入口
-├── frontend/                     # Vite 前端工程
+├── frontend/                     # Vite + Vue 3 前端工程
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── index.html
 │   └── src/
-│       ├── main.js               # 入口
-│       ├── app.js                # 主应用（UI + 业务逻辑）
-│       ├── api.js                # API 客户端
-│       ├── i18n.js               # 中英文 i18n
-│       ├── stream.js             # SSE 流式响应解析器
-│       └── style.css             # Tailwind v4 + 自定义样式
+│       ├── main.js               # Vue 挂载入口
+│       ├── App.vue               # 根布局（主题/语言/会话状态）
+│       ├── i18n.js               # 中英文 i18n（Vue reactive）
+│       ├── style.css             # Tailwind v4 + 自定义样式
+│       ├── components/           # Vue 组件
+│       │   ├── ChatPanel.vue      #   聊天区 + 流式输出 + 发送逻辑
+│       │   ├── ConversationList.vue #  对话列表
+│       │   ├── ModelConfig.vue     #   模型配置面板
+│       │   ├── MessageBubble.vue   #   消息气泡 + Markdown 渲染
+│       │   └── StreamBubble.vue    #   流式输出气泡
+│       └── composables/          # Vue Composition 工具
+│           ├── useApi.js           #   API 客户端（fetch / Tauri invoke）
+│           ├── useStream.js        #   SSE 流式响应解析器
+│           └── useUtils.js         #   工具函数 + 请求体构建
 ├── .github/
 │   └── workflows/
 │       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包 + Tauri 安装包）

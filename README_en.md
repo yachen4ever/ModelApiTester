@@ -205,9 +205,11 @@ Open `http://localhost:5173` in your browser. Frontend code changes hot-reload i
 - clap (CLI argument parsing)
 
 **Frontend:**
+- Vue 3 (Composition API + `<script setup>`)
 - Vite 6 + Tailwind CSS v4
 - showdown.js (Markdown rendering)
 - Viewer.js (image viewer)
+- Font Awesome (icons)
 - Native fetch (API requests)
 
 **Desktop:**
@@ -249,17 +251,25 @@ ModelApiTester/
 │       └── src/
 │           ├── lib.rs            # IPC routing (api_request command)
 │           └── main.rs           # Tauri entry
-├── frontend/                     # Vite frontend project
+├── frontend/                     # Vite + Vue 3 frontend project
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── index.html
 │   └── src/
-│       ├── main.js               # Entry
-│       ├── app.js                # Main app (UI + business logic)
-│       ├── api.js                # API client
-│       ├── i18n.js               # zh/en i18n
-│       ├── stream.js             # SSE streaming response parser
-│       └── style.css             # Tailwind v4 + custom styles
+│       ├── main.js               # Vue mount entry
+│       ├── App.vue               # Root layout (theme/language/conversation state)
+│       ├── i18n.js               # zh/en i18n (Vue reactive)
+│       ├── style.css             # Tailwind v4 + custom styles
+│       ├── components/           # Vue components
+│       │   ├── ChatPanel.vue      #   Chat area + streaming + send logic
+│       │   ├── ConversationList.vue #  Conversation list
+│       │   ├── ModelConfig.vue     #   Model config panel
+│       │   ├── MessageBubble.vue   #   Message bubble + Markdown render
+│       │   └── StreamBubble.vue    #   Streaming output bubble
+│       └── composables/          # Vue Composition utilities
+│           ├── useApi.js           #   API client (fetch / Tauri invoke)
+│           ├── useStream.js        #   SSE streaming response parser
+│           └── useUtils.js         #   Utility functions + request builder
 ├── .github/
 │   └── workflows/
 │       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri installers)

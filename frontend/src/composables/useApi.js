@@ -1,4 +1,4 @@
-// API 客户端 - 自动检测环境，Web 走 fetch，Tauri 走 invoke
+// API 客户端 — 自动检测环境，Web 走 fetch，Tauri 走 invoke
 
 const isTauri = typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined;
 
@@ -21,7 +21,7 @@ export async function api(path, options = {}) {
   }
 
   // Web 版：直接 fetch（BASE_URL 在构建时由 Vite 注入，dev='/' prod='/api-tester-rust/'）
-  const base = import.meta.env.BASE_URL; // 末尾带 /
+  const base = import.meta.env.BASE_URL;
   const url = base + path;
   const res = await fetch(url, { ...options, headers });
   return res.json();

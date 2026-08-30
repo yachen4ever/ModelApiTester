@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import vue from '@vitejs/plugin-vue';
 import pkg from './package.json' with { type: 'json' };
 
 // Tauri dev/build 时会设置 TAURI_ENV_PLATFORM
@@ -8,7 +9,7 @@ const isTauri = !!process.env.TAURI_ENV_PLATFORM;
 export default defineConfig(({ command }) => ({
   // Web build → '/api-tester-rust/'；Tauri 或 dev → '/'
   base: command === 'build' && !isTauri ? '/api-tester-rust/' : '/',
-  plugins: [tailwindcss()],
+  plugins: [tailwindcss(), vue()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
@@ -21,7 +22,12 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../crates/http-server/static',
     emptyOutDir: true,
-    // @tauri-apps/api 在 Tauri 2 中是普通 npm 包，正常打包即可
-    // Web 构建时虽然打包进去但 isTauri=false 不会执行该分支
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', '@fortawesome/fontawesome-free'],
+        },
+      },
+    },
   },
 }));

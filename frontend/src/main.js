@@ -1,4 +1,8 @@
 import './style.css';
-import { start } from './app.js';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import 'viewerjs/dist/viewer.min.css';
 
-start();
+import { createApp } from 'vue';
+import App from './App.vue';
+
+createApp(App).mount('#app');

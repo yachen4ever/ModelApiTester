@@ -20,7 +20,7 @@ export async function readStream(response, { onText, onMeta, onDone }) {
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // 保留最后不完整的行
+      buffer = lines.pop();
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -53,7 +53,6 @@ export async function readStream(response, { onText, onMeta, onDone }) {
 
 function parseChunk(json, { onText, onMeta }) {
   // ── OpenAI 格式 ──
-  // { choices: [{ delta: { content: "..." } }], usage: { ... } }
   if (json.choices) {
     const delta = json.choices[0]?.delta;
     if (delta?.content) onText(delta.content);
@@ -62,9 +61,6 @@ function parseChunk(json, { onText, onMeta }) {
   }
 
   // ── Anthropic 格式 ──
-  // { type: "content_block_delta", delta: { type: "text_delta", text: "..." } }
-  // { type: "message_delta", usage: { output_tokens: N } }
-  // { type: "message_start", message: { usage: { input_tokens: N } } }
   if (json.type) {
     if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
       onText(json.delta.text);
@@ -77,7 +73,6 @@ function parseChunk(json, { onText, onMeta }) {
   }
 
   // ── Google Gemini 格式 ──
-  // { candidates: [{ content: { parts: [{ text: "..." }] } }], usageMetadata: { ... } }
   if (json.candidates) {
     const parts = json.candidates[0]?.content?.parts || [];
     for (const p of parts) {

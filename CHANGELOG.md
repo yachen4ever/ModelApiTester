@@ -4,6 +4,42 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.5.0] — 2026-08-30
+
+### Breaking Changes
+- **前端架构完全重写** — 从原生 JS DOM 操作改为 Vue 3 (`<script setup>` + Composition API)，所有 UI 逻辑用响应式数据驱动，不再手动操作 DOM
+
+### Features — Vue 3 前端重构
+- **Vue 3 + Composition API** — 全部前端代码重写为 `.vue` 单文件组件，`ref()`/`computed()` 响应式状态管理，无需 Pinia
+- **组件拆分** — 从 1322 行单文件 `app.js` 拆分为 5 个组件 + 3 个 composables：
+  - `App.vue` — 根布局 + 主题/语言/会话状态
+  - `components/ChatPanel.vue` — 聊天区 + 流式输出 + 附件处理 + 发送逻辑
+  - `components/ConversationList.vue` — 左侧对话列表
+  - `components/ModelConfig.vue` — 右侧模型配置面板
+  - `components/MessageBubble.vue` — 单条消息气泡 + Markdown 渲染 + 图片查看器
+  - `components/StreamBubble.vue` — 流式输出气泡 + 闪烁光标
+  - `composables/useApi.js` — API 客户端（Web fetch / Tauri invoke 自动切换）
+  - `composables/useStream.js` — SSE 流式响应解析器
+  - `composables/useUtils.js` — 工具函数 + API 请求体构建
+- **CDN → npm** — Font Awesome 6.5.1、Viewer.js、Showdown.js 全部从 CDN `<script>` 标签改为 npm import，不再依赖外部 CDN
+- **i18n 响应式化** — `i18n.js` 改为 Vue `ref()` + `useI18n()` composable，语言切换自动触发 UI 更新
+
+### Infrastructure
+- `frontend/package.json` — 新增 `vue`、`@vitejs/plugin-vue` 依赖，版本号 0.5.0
+- `frontend/vite.config.js` — 添加 `vue()` 插件，`manualChunks` 分包优化（vendor chunk）
+- `frontend/index.html` — 删除所有 CDN `<link>` 和 `<script>` 标签
+- `frontend/src/main.js` — 改为 `createApp(App).mount('#app')` Vue 挂载入口
+- `frontend/src/style.css` — 保留 Tailwind v4 + 自定义样式，新增 `#app` flex 布局
+- 删除旧文件：`app.js`（1322 行）、`api.js`、`stream.js`
+
+### Preserved (from v0.4.0)
+- Rust 后端 API 完全不动
+- 所有功能特性保持不变（流式输出、多模态、上下文开关、模型配置持久化等）
+- Tailwind v4 做 UI 样式 + 暗色模式
+- Tauri 桌面版前端共享
+
+---
+
 ## [v0.4.0] — 2026-08-30
 
 ### Breaking Changes
