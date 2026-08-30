@@ -10,6 +10,7 @@
 
 - **多 API 类型支持** — 内置 OpenAI / Anthropic / Google Gemini / 其他主流 API 格式，自动适配请求体与响应解析
 - **流式输出** — 支持 OpenAI / Anthropic / Google Gemini 三种 SSE 流式格式，逐字输出 + 闪烁光标，流结束后自动 Markdown 渲染
+- **预设测试提示词** — 内置 8 大能力分类（推理/代码/数学/指令遵循/创意写作/多语言/常识/安全）共 32 条精选提示词，一键填入输入框，适合快速对比不同模型的能力差异
 - **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名；流式模式下拆分 prefill/decode 各自耗时与 tok/s
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
 - **图片双击放大** — 集成 Viewer.js，双击聊天图片打开查看器，支持缩放/旋转/翻转/下载
@@ -259,9 +260,10 @@ ModelApiTester/
 │       ├── main.js               # Vue 挂载入口
 │       ├── App.vue               # 根布局（主题/语言/会话状态）
 │       ├── i18n.js               # 中英文 i18n（Vue reactive）
+│       ├── presetPrompts.js       # 预设测试提示词数据（8 分类 × 4 条）
 │       ├── style.css             # Tailwind v4 + 自定义样式
 │       ├── components/           # Vue 组件
-│       │   ├── ChatPanel.vue      #   聊天区 + 流式输出 + 发送逻辑
+│       │   ├── ChatPanel.vue      #   聊天区 + 流式输出 + 预设提示词面板 + 发送逻辑
 │       │   ├── ConversationList.vue #  对话列表
 │       │   ├── ModelConfig.vue     #   模型配置面板
 │       │   ├── MessageBubble.vue   #   消息气泡 + Markdown 渲染

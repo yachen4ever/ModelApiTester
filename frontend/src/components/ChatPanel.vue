@@ -5,6 +5,7 @@ import StreamBubble from './StreamBubble.vue';
 import { api } from '../composables/useApi.js';
 import { readStream } from '../composables/useStream.js';
 import { buildApiRequest, extractContent, extractMeta, formatSize, isClaudeModel } from '../composables/useUtils.js';
+import { PROMPT_PRESETS } from '../presetPrompts.js';
 
 const props = defineProps({
   messages: { type: Array, default: () => [] },
@@ -29,6 +30,28 @@ const showSpinner = ref(false);
 const fileInput = ref(null);
 const inputEl = ref(null);
 const chatHistoryEl = ref(null);
+
+// 预设提示词
+const showPresets = ref(false);
+const selectedCategory = ref(0);
+
+function togglePresets() {
+  showPresets.value = !showPresets.value;
+  if (showPresets.value) selectedCategory.value = 0;
+}
+
+function selectPresetCategory(idx) {
+  selectedCategory.value = idx;
+}
+
+function applyPreset(prompt) {
+  inputText.value = prompt;
+  showPresets.value = false;
+  nextTick(() => {
+    inputEl.value?.focus();
+    autoResize();
+  });
+}
 
 // 流式气泡
 const streamingContent = ref('');
@@ -379,6 +402,36 @@ defineExpose({ scrollToBottom, sendMessage });
         </template>
       </div>
 
+      <!-- 预设提示词面板 -->
+      <div v-if="showPresets" class="mb-2 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-md">
+        <div class="flex max-h-64">
+          <!-- 左栏：分类 -->
+          <div class="w-32 shrink-0 border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 overflow-y-auto">
+            <button v-for="(cat, idx) in PROMPT_PRESETS" :key="cat.category"
+              @click="selectPresetCategory(idx)"
+              :class="[
+                'w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-left transition border-l-2',
+                selectedCategory === idx
+                  ? 'border-indigo-500 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-medium'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              ]"
+            >
+              <i :class="['fas', cat.icon, 'text-center w-3.5']"></i>
+              <span class="truncate">{{ t('preset_cat_' + cat.category) }}</span>
+            </button>
+          </div>
+          <!-- 右栏：提示词列表 -->
+          <div class="flex-1 overflow-y-auto">
+            <div v-for="p in PROMPT_PRESETS[selectedCategory]?.prompts" :key="p.name"
+              @click="applyPreset(p.content)"
+              class="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition"
+            >
+              {{ t(p.name) }}
+            </div>
+          </div>
+         </div>
+      </div>
+
       <!-- 输入框 + 按钮 -->
       <div class="flex gap-2 items-center">
         <textarea ref="inputEl" v-model="inputText" rows="1"
@@ -387,6 +440,11 @@ defineExpose({ scrollToBottom, sendMessage });
           @input="autoResize"
           class="flex-1 px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg resize-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px] max-h-120"
         ></textarea>
+        <!-- 预设提示词按钮 -->
+        <button @click="togglePresets"
+          :class="['w-10 h-10 shrink-0 border rounded-lg flex items-center justify-center transition', showPresets ? 'border-indigo-500 text-indigo-500' : 'border-gray-300 dark:border-gray-600 text-gray-400 hover:border-indigo-500 hover:text-indigo-500']"
+          :title="t('preset_prompts')"
+        ><i class="fas fa-flask"></i></button>
         <button @click="fileInput?.click()"
           class="w-10 h-10 shrink-0 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 transition"
           :title="t('upload_file')"

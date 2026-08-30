@@ -10,6 +10,7 @@ Designed for individuals/teams who need to test API availability and manage API 
 
 - **Multi-API type support** — Built-in OpenAI / Anthropic / Google Gemini / other mainstream API formats, auto-adapts request body and response parsing
 - **Streaming output** — Supports OpenAI / Anthropic / Google Gemini SSE streaming formats, character-by-character output with blinking cursor, auto Markdown render on completion
+- **Preset test prompts** — 32 curated prompts across 8 capability categories (reasoning / coding / math / instruction following / creative writing / multilingual / knowledge / safety), one-click fill into the input box, ideal for quickly comparing model capabilities
 - **Response timing** — Each reply shows elapsed time, token usage, and model name; streaming mode breaks down prefill/decode timing and tok/s separately
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
 - **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
@@ -261,7 +262,7 @@ ModelApiTester/
 │       ├── i18n.js               # zh/en i18n (Vue reactive)
 │       ├── style.css             # Tailwind v4 + custom styles
 │       ├── components/           # Vue components
-│       │   ├── ChatPanel.vue      #   Chat area + streaming + send logic
+│       │   ├── ChatPanel.vue      #   Chat area + streaming + preset prompt panel + send logic
 │       │   ├── ConversationList.vue #  Conversation list
 │       │   ├── ModelConfig.vue     #   Model config panel
 │       │   ├── MessageBubble.vue   #   Message bubble + Markdown render
