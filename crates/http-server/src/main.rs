@@ -33,19 +33,19 @@ impl IntoResponse for AppError {
 #[command(version = VERSION, about = "Lightweight LLM API testing tool")]
 struct Args {
     /// 监听地址
-    #[arg(long, env = "HOST", default_value = "127.0.0.1")]
+    #[arg(long, default_value = "127.0.0.1")]
     host: String,
 
     /// 监听端口
-    #[arg(long, env = "PORT", default_value_t = 52081)]
+    #[arg(long, default_value_t = 52081)]
     port: u16,
 
     /// SQLite 数据库路径
-    #[arg(long, env = "DB_PATH", default_value = "./model_api_tester.db")]
+    #[arg(long, default_value = "./model_api_tester.db")]
     db_path: String,
 
     /// 前端静态文件目录
-    #[arg(long, env = "STATIC_DIR", default_value = "crates/http-server/static")]
+    #[arg(long, default_value = "crates/http-server/static")]
     static_dir: String,
 }
 

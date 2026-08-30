@@ -1,3 +1,14 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: '19dcba1e-5dd9-4125-bc92-424cb858c4ce'
+  PropagateID: '19dcba1e-5dd9-4125-bc92-424cb858c4ce'
+  ReservedCode1: '91075988-b811-4e98-8773-3bc8ff4919e7'
+  ReservedCode2: '91075988-b811-4e98-8773-3bc8ff4919e7'
+---
+
 # ModelApiTester
 
 [English](./README_en.md) | 中文
@@ -88,16 +99,11 @@ Options:
   -V, --version              显示版本
 ```
 
-所有参数也支持环境变量（`HOST`/`PORT`/`DB_PATH`/`STATIC_DIR`），CLI 参数优先级高于环境变量。
+所有参数仅通过命令行传入，**不支持环境变量**（避免 `HOST`/`PORT` 等通用变量被外部环境误设置影响服务）。
 
 ```bash
 # 对外暴露 + 自定义端口和数据库路径
 ./mat-server --host 0.0.0.0 --port 8080 --db-path /data/mat.db --static-dir /var/www/mat
-
-# 或通过环境变量
-export HOST=0.0.0.0
-export PORT=8080
-./mat-server
 ```
 
 **生产部署（systemd + nginx）：**

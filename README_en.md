@@ -1,3 +1,14 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: '606a3024-0b48-4319-9f5e-e34b9259ba72'
+  PropagateID: '606a3024-0b48-4319-9f5e-e34b9259ba72'
+  ReservedCode1: '69455ef2-3065-4662-b025-24d7803ae211'
+  ReservedCode2: '69455ef2-3065-4662-b025-24d7803ae211'
+---
+
 # ModelApiTester
 
 English | [中文](./README.md)
@@ -88,16 +99,11 @@ Options:
   -V, --version              Show version
 ```
 
-All options also support environment variables (`HOST`/`PORT`/`DB_PATH`/`STATIC_DIR`). CLI flags take precedence over environment variables.
+All options are passed via CLI flags only; **environment variables are not supported** (to avoid common variables like `HOST`/`PORT` being accidentally set by external environments).
 
 ```bash
 # Expose externally + custom port and database path
 ./mat-server --host 0.0.0.0 --port 8080 --db-path /data/mat.db --static-dir /var/www/mat
-
-# Or via environment variables
-export HOST=0.0.0.0
-export PORT=8080
-./mat-server
 ```
 
 **Production deployment (systemd + nginx):**
