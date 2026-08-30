@@ -1,13 +1,3 @@
----
-AIGC:
-  ContentProducer: '001191110102MAD55U9H0F10002'
-  ContentPropagator: '001191110102MAD55U9H0F10002'
-  Label: '1'
-  ProduceID: '6358ed92-1220-4894-99e5-5397aea5364f'
-  PropagateID: '6358ed92-1220-4894-99e5-5397aea5364f'
-  ReservedCode1: 'fc235a66-5aaa-4df4-8a23-bef649b66faf'
-  ReservedCode2: 'fc235a66-5aaa-4df4-8a23-bef649b66faf'
----
 
 # ModelApiTester
 

@@ -1,6 +1,32 @@
+
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.5.4] — 2026-08-30
+
+### Features — Markdown 渲染升级 + 公式与视频支持
+- **Markdown 渲染引擎替换** — 从 showdown 切换至 markdown-it，渲染更规范、扩展性更强
+- **数学公式渲染** — 集成 KaTeX，支持行内 `$...$` 与块级 `$$...$$` 公式语法，
+  覆盖上下标、分数、根号、求和、希腊字母、集合等常用 LaTeX 语法
+- **视频播放支持** — 视频文件链接（.mp4/.webm/.mov 等）及 `data:video` URI 自动渲染为
+  `<video controls>` 播放器，支持播放/进度/音量/全屏
+- **README 实机截图** — 中英文 README 均新增三栏布局实机截图（API Key 已脱敏）
+
+### Technical
+- 新增 `frontend/src/composables/mdRender.js` — 共享 Markdown 渲染模块
+  （markdown-it + markdown-it-texmath + KaTeX，含视频链接/图片规则自定义）
+- `frontend/src/components/MessageBubble.vue` / `StreamBubble.vue` —
+  showdown `converter.makeHtml()` → `renderMarkdown()`
+- `frontend/src/style.css` — 新增 KaTeX 样式引入 + 视频播放器样式
+- `frontend/src/main.js` — 引入 `katex/dist/katex.min.css`
+- `frontend/package.json` — 新增 markdown-it / markdown-it-texmath / katex 依赖，移除 showdown
+- `docs/screenshot.png` — 脱敏后实机截图（288KB）
+- `README.md` / `README_en.md` — 嵌入截图 + 技术栈更新 + 公式/视频特性说明 + 目录结构补充
+- `crates/http-server/src/main.rs` — 移除 HOST/PORT/DB_PATH/STATIC_DIR 环境变量支持，
+  仅通过 CLI 参数配置（更精确、避免环境变量干扰）
 
 ---
 
