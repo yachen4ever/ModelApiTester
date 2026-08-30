@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '19dcba1e-5dd9-4125-bc92-424cb858c4ce'
-  PropagateID: '19dcba1e-5dd9-4125-bc92-424cb858c4ce'
-  ReservedCode1: '91075988-b811-4e98-8773-3bc8ff4919e7'
-  ReservedCode2: '91075988-b811-4e98-8773-3bc8ff4919e7'
+  ProduceID: 'a6057af2-59b4-44bb-bb12-b1caa421be5a'
+  PropagateID: 'a6057af2-59b4-44bb-bb12-b1caa421be5a'
+  ReservedCode1: 'd828ef15-5665-4650-8945-0916ba6a92d0'
+  ReservedCode2: 'd828ef15-5665-4650-8945-0916ba6a92d0'
 ---
 
 # ModelApiTester
@@ -28,6 +28,8 @@ AIGC:
 - **响应耗时统计** — 每条回复自动显示耗时、token 用量、模型名；流式模式下拆分 prefill/decode 各自耗时与 tok/s
 - **图片与文件上传** — 支持多图选择/预览，图片走多模态（OpenAI vision 格式），文件可附加（Claude document 块）
 - **图片双击放大** — 集成 Viewer.js，双击聊天图片打开查看器，支持缩放/旋转/翻转/下载
+- **数学公式渲染** — 集成 KaTeX，支持 `$...$` 行内公式和 `$$...$$` 块级公式，完美渲染 LaTeX 数学表达式
+- **视频播放** — Markdown 中的视频链接（`.mp4`/`.webm` 等扩展名或 `data:video` URI）自动渲染为可播放的 `<video>` 标签
 - **模型列表拉取** — 点击模型输入框刷新按钮，从接口 `/v1/models` 拉取可用模型列表，支持实时筛选
 - **API 类型 + 路径下拉** — 按类型提供候选路径（如 `/v1/chat/completions`、`/v1/messages`），空值 = 自动推断
 - **上下文开关** — 一键切换是否携带历史上下文（关闭 = 纯单轮测试模式），默认关闭
@@ -170,7 +172,7 @@ location /api-tester-rust/api/ {
 > **说明**：自 v0.5.3 起桌面版改为单可执行文件（不生成 msi/dmg/deb 安装包），
 > 数据目录固定为 `~/.mat-desktop/model_api_tester.db`，绿色分发、随拷随用。
 
-<!-- 截图占位 -->
+![Model API Tester 截图](./docs/screenshot.png)
 
 ---
 
@@ -221,7 +223,7 @@ npm run dev
 **前端：**
 - Vue 3（Composition API + `<script setup>`）
 - Vite 6 + Tailwind CSS v4
-- showdown.js（Markdown 渲染）
+- markdown-it + KaTeX（Markdown 渲染 + LaTeX 数学公式）
 - Viewer.js（图片查看器）
 - Font Awesome（图标）
 - 原生 fetch（请求 API 兼容接口）
@@ -287,7 +289,8 @@ ModelApiTester/
 │       └── composables/          # Vue Composition 工具
 │           ├── useApi.js           #   API 客户端（fetch / Tauri invoke）
 │           ├── useStream.js        #   SSE 流式响应解析器
-│           └── useUtils.js         #   工具函数 + 请求体构建
+│           ├── useUtils.js         #   工具函数 + 请求体构建
+│           └── mdRender.js         #   共享 Markdown 渲染（markdown-it + KaTeX + 视频）
 ├── .github/
 │   └── workflows/
 │       └── release.yml           # GitHub Actions（3平台二进制 + 前端打包 + Tauri 单可执行）

@@ -1,6 +1,7 @@
 import './style.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import 'viewerjs/dist/viewer.min.css';
+import 'katex/dist/katex.min.css';
 
 import { createApp } from 'vue';
 import App from './App.vue';

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Converter } from 'showdown';
+import { renderMarkdown } from '../composables/mdRender.js';
 import { formatDuration, formatTps, formatSize } from '../composables/useUtils.js';
 
 const props = defineProps({
@@ -9,8 +9,6 @@ const props = defineProps({
   isError: { type: Boolean, default: false },
   t: { type: Function, required: true },
 });
-
-const converter = new Converter({ tables: true, strikethrough: true, simpleLineBreaks: true });
 
 const parsedContent = computed(() => {
   let content = props.message.content;
@@ -26,7 +24,7 @@ const htmlParts = computed(() => {
     if (props.isUser) {
       parts.push({ type: 'text-plain', text: content });
     } else {
-      parts.push({ type: 'html', html: converter.makeHtml(content) });
+      parts.push({ type: 'html', html: renderMarkdown(content) });
     }
   } else if (Array.isArray(content)) {
     content.forEach(part => {
@@ -34,7 +32,7 @@ const htmlParts = computed(() => {
         if (props.isUser) {
           parts.push({ type: 'text-plain', text: part.text });
         } else {
-          parts.push({ type: 'html', html: converter.makeHtml(part.text) });
+          parts.push({ type: 'html', html: renderMarkdown(part.text) });
         }
       } else if (part.type === 'image_url') {
         parts.push({ type: 'image', src: part.image_url.url });

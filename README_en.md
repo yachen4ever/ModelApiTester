@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '606a3024-0b48-4319-9f5e-e34b9259ba72'
-  PropagateID: '606a3024-0b48-4319-9f5e-e34b9259ba72'
-  ReservedCode1: '69455ef2-3065-4662-b025-24d7803ae211'
-  ReservedCode2: '69455ef2-3065-4662-b025-24d7803ae211'
+  ProduceID: '6358ed92-1220-4894-99e5-5397aea5364f'
+  PropagateID: '6358ed92-1220-4894-99e5-5397aea5364f'
+  ReservedCode1: 'fc235a66-5aaa-4df4-8a23-bef649b66faf'
+  ReservedCode2: 'fc235a66-5aaa-4df4-8a23-bef649b66faf'
 ---
 
 # ModelApiTester
@@ -28,6 +28,8 @@ Designed for individuals/teams who need to test API availability and manage API 
 - **Response timing** — Each reply shows elapsed time, token usage, and model name; streaming mode breaks down prefill/decode timing and tok/s separately
 - **Image & file upload** — Multi-image select/preview, images sent as multimodal (OpenAI vision format), files attachable (Claude document block)
 - **Image double-click zoom** — Integrated Viewer.js; double-click any chat image to open a viewer with zoom/rotate/flip/download
+- **Math formula rendering** — Integrated KaTeX; supports `$...$` inline and `$$...$$` block-level formulas, perfectly renders LaTeX math expressions
+- **Video playback** — Video links in Markdown (`.mp4`/`.webm` extensions or `data:video` URIs) are automatically rendered as playable `<video>` tags
 - **Model list fetch** — Click the refresh button next to the model field to pull available models from `/v1/models`, with live filtering
 - **API type + endpoint dropdown** — Provides candidate paths per type (e.g. `/v1/chat/completions`, `/v1/messages`); empty = auto-infer
 - **Context toggle** — One-click switch for sending conversation history (off = pure single-turn test mode), defaults to off
@@ -170,7 +172,7 @@ Download and launch directly — data is stored in `~/.mat-desktop/`, no server 
 > **Note**: Since v0.5.3 the desktop build is a single executable (no msi/dmg/deb installers).
 > The data directory is fixed to `~/.mat-desktop/model_api_tester.db` for portable green distribution.
 
-<!-- screenshot placeholder -->
+![Model API Tester Screenshot](./docs/screenshot.png)
 
 ---
 
@@ -221,7 +223,7 @@ Open `http://localhost:5173` in your browser. Frontend code changes hot-reload i
 **Frontend:**
 - Vue 3 (Composition API + `<script setup>`)
 - Vite 6 + Tailwind CSS v4
-- showdown.js (Markdown rendering)
+- markdown-it + KaTeX (Markdown rendering + LaTeX math formulas)
 - Viewer.js (image viewer)
 - Font Awesome (icons)
 - Native fetch (API requests)
@@ -283,7 +285,8 @@ ModelApiTester/
 │       └── composables/          # Vue Composition utilities
 │           ├── useApi.js           #   API client (fetch / Tauri invoke)
 │           ├── useStream.js        #   SSE streaming response parser
-│           └── useUtils.js         #   Utility functions + request builder
+│           ├── useUtils.js         #   Utility functions + request builder
+│           └── mdRender.js         #   Shared Markdown renderer (markdown-it + KaTeX + video)
 ├── .github/
 │   └── workflows/
 │       └── release.yml           # GitHub Actions (3-platform binaries + frontend zip + Tauri single executable)

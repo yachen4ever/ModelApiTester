@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onUnmounted } from 'vue';
-import { Converter } from 'showdown';
+import { renderMarkdown } from '../composables/mdRender.js';
 import { formatDuration, formatTps } from '../composables/useUtils.js';
 
 const props = defineProps({
@@ -8,8 +8,6 @@ const props = defineProps({
   meta: { type: Object, default: null },
   streaming: { type: Boolean, default: true },
 });
-
-const converter = new Converter({ tables: true, strikethrough: true, simpleLineBreaks: true });
 
 const streamText = ref('');
 const displayHtml = ref('');
@@ -34,7 +32,7 @@ function throttleUpdate(text) {
 // 外部调用：流结束后全量 Markdown 渲染
 function finalUpdate(text) {
   streamText.value = '';
-  displayHtml.value = converter.makeHtml(text);
+  displayHtml.value = renderMarkdown(text);
   showCursor.value = false;
   isStreaming.value = false;
 }
