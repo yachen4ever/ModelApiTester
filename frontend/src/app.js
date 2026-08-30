@@ -7,6 +7,8 @@ let currentTheme = localStorage.getItem('theme') || 'light';
 let currentConvId = null;
 let selectedAttachments = [];
 let modelListCache = [];
+let modelListCacheError = false;
+let fetchModelsLock = false;
 let chatViewer = null;
 
 const converter = new showdown.Converter({ tables: true, strikethrough: true, simpleLineBreaks: true });
@@ -274,6 +276,8 @@ function onEndpointChange() {}
 // 模型列表拉取与筛选
 // ============================================================
 async function fetchModels() {
+  if (fetchModelsLock) return;
+  fetchModelsLock = true;
   const baseUrl = document.getElementById('url').value.trim();
   const apiKey = document.getElementById('key').value.trim();
   const apiType = document.getElementById('apiType').value;
@@ -310,11 +314,15 @@ async function fetchModels() {
     else if (data.list && Array.isArray(data.list)) models = data.list;
     models = models.map(m => typeof m === 'string' ? m : (m.id || m.name || '')).filter(Boolean);
     if (models.length === 0) { alert(t(currentLang, 'no_models')); return; }
+    modelListCache = models;
+    modelListCacheError = false;
     showModelSuggestions(models);
   } catch (e) {
+    modelListCacheError = true;
     alert(`${t(currentLang, 'fetch_models_failed')}: ${e.message}`);
   } finally {
     icon.classList.remove('spin');
+    fetchModelsLock = false;
   }
 }
 
@@ -343,6 +351,8 @@ function filterModelSuggestions() {
 
 async function showModelSuggestionsOnFocus() {
   if (modelListCache.length > 0) { showModelSuggestions(modelListCache); return; }
+  // 上次拉取失败则不再自动重试，避免关弹窗后 onfocus 循环触发
+  if (modelListCacheError) return;
   await fetchModels();
 }
 

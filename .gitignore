@@ -8,13 +8,15 @@ model-api-tester.exe
 .env
 dist/
 *.log
-.bun-cache/
 
 # Rust
 /target/
 
 # Vite build output
 /crates/http-server/static/
+
+# Tauri generated
+/crates/tauri-app/gen/
 
 # Temp
 /.temp/

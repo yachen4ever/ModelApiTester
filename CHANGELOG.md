@@ -1,7 +1,13 @@
-
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.3.2] — 2026-08-30
+
+### Bug Fixes
+- **模型列表拉取死循环** — API Key 错误时 `onfocus` 自动触发 `fetchModels()` → `alert()` 弹窗 → 关闭后焦点回到 input → 再次触发 `onfocus` → 无限循环。新增三层防护：`fetchModelsLock` 防并发、`modelListCacheError` 标记失败后不再自动重试（仅手动点刷新按钮可重试）、成功后清除错误标记
 
 ---
 
