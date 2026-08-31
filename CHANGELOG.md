@@ -1,7 +1,22 @@
-
 # Changelog
 
 All notable changes to this project. Dates are in CST (UTC+8).
+
+---
+
+## [v0.5.5] — 2026-08-31
+
+### Bug Fixes
+- **修复已加载配置提示显示 undefined** — 从对话恢复模型配置时 `last_config` JSON 缺少 `name` 字段，
+  导致提示文案显示 `已加载: undefined (模型名)`；改为回退到 `model` 字段并简化提示格式
+- **修复配置提示不随语言切换更新** — 将 `savedModelHint` 从静态字符串改为 computed 属性，
+  切换语言后提示文案自动更新为当前语言
+
+### Technical
+- `frontend/src/components/ModelConfig.vue` — `savedModelHint` 拆分为 `savedHintLabel` + `savedHintDetail`，
+  通过 computed 实时响应 `t()` 翻译
+- `README.md` / `README_en.md` — 精简内容去掉过程细节，截图移至功能介绍区，
+  nginx location 统一用 `mat` 命名，CLI 参数说明补充 `--static-dir` / `--db-path` 作用
 
 ---
 
