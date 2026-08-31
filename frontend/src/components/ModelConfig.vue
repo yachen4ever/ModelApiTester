@@ -23,8 +23,17 @@ const frequencyPenalty = ref(0);
 
 const showAdvanced = ref(false);
 const savedConfigs = ref([]);
-const savedModelHint = ref('');
+// ── 提示文案（响应语言切换）──
+const loadedModelName = ref('');
+const savedHintLabel = ref(''); // 'loaded' | 'saved' | ''
+const savedHintDetail = ref('');
 const savedModelHintVisible = ref(false);
+
+const savedModelHint = computed(() => {
+  if (!savedHintLabel.value) return '';
+  const label = savedHintLabel.value === 'saved' ? props.t('saved') : props.t('loaded');
+  return `${label}: ${savedHintDetail.value}`;
+});
 
 // ── 模型列表 ──
 const modelListCache = ref([]);
@@ -75,7 +84,10 @@ function applyConfig(c) {
   maxTokens.value = c.max_tokens ?? 4096;
   topP.value = c.top_p ?? 1;
   frequencyPenalty.value = c.frequency_penalty ?? 0;
-  savedModelHint.value = `${props.t('loaded')}: ${c.name} (${c.model})`;
+  const configName = c.name || c.model || '';
+  loadedModelName.value = configName;
+  savedHintLabel.value = 'loaded';
+  savedHintDetail.value = configName || c.model || '';
   savedModelHintVisible.value = true;
   emit('config-applied', getFormData());
 }
@@ -107,7 +119,8 @@ async function saveCurrentConfig() {
     body: JSON.stringify({ ...data, name: name || props.t('unnamed') })
   });
   await loadSavedConfigs();
-  savedModelHint.value = `${props.t('saved')}: ${name || props.t('unnamed')} → ${data.model} @ ${tryGetHost(data.base_url)}`;
+  savedHintLabel.value = 'saved';
+  savedHintDetail.value = `${name || props.t('unnamed')} → ${data.model} @ ${tryGetHost(data.base_url)}`;
   savedModelHintVisible.value = true;
 }
 
