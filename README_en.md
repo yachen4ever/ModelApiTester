@@ -6,7 +6,7 @@ A lightweight LLM API testing tool with multimodal chat, streaming output, respo
 
 Designed for individuals/teams who need to test API availability and manage API keys — not a full-blown chat product, just "fill in the endpoint → send a message → see the result."
 
-![Model API Tester Screenshot](./docs/screenshot.png)
+![Model API Tester Screenshot](./docs/screenshot_en.png)
 
 ## Features
 
