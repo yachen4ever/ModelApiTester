@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { api } from '../composables/useApi.js';
-import { ENDPOINT_PRESETS, detectApiType, tryGetHost } from '../composables/useUtils.js';
+import { ENDPOINT_PRESETS, detectApiType, tryGetHostname } from '../composables/useUtils.js';
+import SaveConfigDialog from './SaveConfigDialog.vue';
 
 const props = defineProps({
   t: { type: Function, required: true },
@@ -23,6 +24,10 @@ const frequencyPenalty = ref(0);
 
 const showAdvanced = ref(false);
 const savedConfigs = ref([]);
+// ── 保存配置对话框 ──
+const saveDialogVisible = ref(false);
+const saveDialogModel = ref('');
+const saveDialogHost = ref('');
 // ── 提示文案（响应语言切换）──
 const loadedModelName = ref('');
 const savedHintLabel = ref(''); // 'loaded' | 'saved' | ''
@@ -111,16 +116,22 @@ async function saveCurrentConfig() {
     alert(props.t('please_fill_first'));
     return;
   }
-  const defaultName = `${data.model} @ ${tryGetHost(data.base_url)}`;
-  const name = prompt(props.t('config_name'), defaultName);
-  if (name === null) return;
+  // 打开自研对话框：A=模型名，B=纯域名（不含端口/子目录）
+  saveDialogModel.value = data.model;
+  saveDialogHost.value = tryGetHostname(data.base_url);
+  saveDialogVisible.value = true;
+}
+
+async function onSaveConfigConfirm(name) {
+  saveDialogVisible.value = false;
+  const data = getFormData();
   await api('api/configs', {
     method: 'POST',
-    body: JSON.stringify({ ...data, name: name || props.t('unnamed') })
+    body: JSON.stringify({ ...data, name })
   });
   await loadSavedConfigs();
   savedHintLabel.value = 'saved';
-  savedHintDetail.value = `${name || props.t('unnamed')} → ${data.model} @ ${tryGetHost(data.base_url)}`;
+  savedHintDetail.value = `${name} → ${data.model} @ ${tryGetHostname(data.base_url)}`;
   savedModelHintVisible.value = true;
 }
 
@@ -128,6 +139,18 @@ async function deleteConfig(id) {
   if (!confirm(props.t('delete_config_confirm'))) return;
   await api(`api/configs/${id}`, { method: 'DELETE' });
   await loadSavedConfigs();
+}
+
+// ── 配置名称解析：name 形如 "model @ host" 或 "model" ──
+// 旧数据可能 name 是任意字符串；优先拆 @ 显示 A/B，兜底用 model + host
+function configParts(c) {
+  const name = c.name || '';
+  const atIdx = name.lastIndexOf(' @ ');
+  if (atIdx > -1) {
+    return { a: name.slice(0, atIdx), b: name.slice(atIdx + 3) };
+  }
+  // 无 @ 分隔：A=name，B=从 base_url 提取 hostname
+  return { a: name || c.model || '', b: tryGetHostname(c.base_url || '') };
 }
 
 // ── 模型列表拉取 ──
@@ -341,12 +364,12 @@ watch([url, apiKey, model, apiType, endpoint, systemPrompt, temperature, maxToke
         <div v-if="savedConfigs.length === 0" class="text-xs text-gray-400 italic">{{ t('no_saved_configs') }}</div>
         <div v-for="c in savedConfigs" :key="c.id"
           @click="applyConfig(c)"
-          class="group flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-xs border border-gray-100 dark:border-gray-600"
+          class="group flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-xs border border-gray-100 dark:border-gray-600"
         >
           <i class="fas fa-server text-gray-400 text-[10px]"></i>
           <div class="flex-1 min-w-0">
-            <div class="font-medium text-gray-700 dark:text-gray-300 truncate">{{ c.name }}</div>
-            <div class="text-[10px] text-gray-400 truncate">{{ c.model }}</div>
+            <div class="font-semibold text-sm text-gray-700 dark:text-gray-200 truncate">{{ configParts(c).a }}</div>
+            <div class="text-[10px] text-gray-400 truncate">{{ configParts(c).b }}</div>
           </div>
           <button @click.stop="deleteConfig(c.id)"
             class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition shrink-0"
@@ -357,5 +380,15 @@ watch([url, apiKey, model, apiType, endpoint, systemPrompt, temperature, maxToke
         </div>
       </div>
     </div>
+
+    <!-- 保存配置对话框 -->
+    <SaveConfigDialog
+      :visible="saveDialogVisible"
+      :model-name="saveDialogModel"
+      :host="saveDialogHost"
+      :t="t"
+      @confirm="onSaveConfigConfirm"
+      @close="saveDialogVisible = false"
+    />
   </div>
 </template>

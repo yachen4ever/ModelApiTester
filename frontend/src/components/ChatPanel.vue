@@ -13,6 +13,7 @@ const props = defineProps({
   contextEnabled: { type: Boolean, default: false },
   formData: { type: Object, required: true },
   t: { type: Function, required: true },
+  currentLang: { type: String, default: 'zh' },
 });
 
 const emit = defineEmits([
@@ -45,7 +46,7 @@ function selectPresetCategory(idx) {
 }
 
 function applyPreset(prompt) {
-  inputText.value = prompt;
+  inputText.value = props.currentLang === 'en' ? (prompt.contentEn || prompt.content) : prompt.content;
   showPresets.value = false;
   nextTick(() => {
     inputEl.value?.focus();
@@ -423,7 +424,7 @@ defineExpose({ scrollToBottom, sendMessage });
           <!-- 右栏：提示词列表 -->
           <div class="flex-1 overflow-y-auto">
             <div v-for="p in PROMPT_PRESETS[selectedCategory]?.prompts" :key="p.name"
-              @click="applyPreset(p.content)"
+              @click="applyPreset(p)"
               class="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition"
             >
               {{ t(p.name) }}

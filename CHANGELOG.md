@@ -4,6 +4,31 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.5.6] — 2026-09-01
+
+### Bug Fixes
+- **修复预设提示词不随语言切换** — 界面切换英文后，预设测试用例（预设提示词）仍发送中文内容；
+  改为每个用例提供 `contentEn` 英文版本，发送时根据当前界面语言自动选择
+
+### Features
+- **保存模型配置对话框重做** — 原生 `prompt()` 替换为自研对话框，名称拆分为两部分：
+  A（模型名）+ B（域名），B 默认取 URL 主机名（不含端口与子目录，如 `openrouter.ai`、`192.168.5.2`），均可编辑
+- **已保存配置列表优化** — 每项改为上方大字显示名称 A、下方小字显示域名 B，
+  兼容旧数据（`model @ host` 格式自动拆分，无 `@` 时以模型名/URL 域名兜底）
+
+### Technical
+- `frontend/src/components/SaveConfigDialog.vue` — 新增自研保存配置对话框组件
+- `frontend/src/composables/useUtils.js` — 新增 `tryGetHostname()`（提取纯主机名）
+- `frontend/src/components/ModelConfig.vue` — 接入对话框、列表 A/B 拆分显示
+- `frontend/src/presetPrompts.js` — 全部 29 个预设测试用例增加 `contentEn` 英文字段
+- `frontend/src/components/ChatPanel.vue` — `applyPreset` 按 `currentLang` 选择 `contentEn` / `content`
+- `frontend/src/App.vue` — 向 `ChatPanel` 传入 `current-lang` prop
+- `.github/workflows/release.yml` — 产物矩阵精简：服务器版仅 Linux（amd64 + 新增 aarch64）；
+  Tauri 版 Linux 打包 AppImage + deb、macOS 打包 dmg（arm64 + x64）、Windows 保持单文件 exe
+- `crates/tauri-app/tauri.conf.json` — 开启 bundle 打包（`active: true`）
+
+---
+
 ## [v0.5.5] — 2026-08-31
 
 ### Bug Fixes

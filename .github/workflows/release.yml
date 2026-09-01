@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   # ────────────────── Rust 后端二进制 ──────────────────
+  # 服务器版仅发布 Linux（x64 + arm64），精简产物
   build-server:
     name: Build server (${{ matrix.target }})
     strategy:
@@ -18,15 +19,9 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: mat-server-linux-x64
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: mat-server-windows-x64.exe
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: mat-server-macos-arm64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact: mat-server-macos-x64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            artifact: mat-server-linux-arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +36,6 @@ jobs:
         shell: bash
         run: |
           BIN="model-api-tester"
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then BIN="$BIN.exe"; fi
           cp "target/${{ matrix.target }}/release/$BIN" "$BIN"
           mv "$BIN" "${{ matrix.artifact }}"
 
@@ -79,6 +73,7 @@ jobs:
           path: mat-frontend-dist.zip
 
   # ────────────────── Tauri 桌面应用 ──────────────────
+  # Windows amd64 单文件 / Linux amd64 (deb + AppImage) / macOS silicon + intel (dmg)
   build-tauri:
     name: Build Tauri (${{ matrix.os }})
     strategy:
@@ -87,13 +82,20 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: mat-desktop-linux-x64
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: mat-desktop-windows-x64.exe
+            bundles: appimage,deb
+            label: linux-x64
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact: mat-desktop-darwin-arm64
+            bundles: dmg
+            label: macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            bundles: dmg
+            label: macos-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: none
+            label: windows-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -124,21 +126,33 @@ jobs:
 
       - name: Build Tauri app
         working-directory: crates/tauri-app
-        run: npx @tauri-apps/cli build --target ${{ matrix.target }} --no-bundle
+        shell: bash
+        run: |
+          if [[ "${{ matrix.bundles }}" == "none" ]]; then
+            npx @tauri-apps/cli build --target ${{ matrix.target }} --no-bundle
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            npx @tauri-apps/cli build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --no-sign
+          else
+            npx @tauri-apps/cli build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+          fi
 
-      - name: Collect binary
+      - name: Collect bundles
         shell: bash
         run: |
           mkdir -p tauri-bin
-          BIN="mat-tauri-app"
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then BIN="$BIN.exe"; fi
-          cp "target/${{ matrix.target }}/release/$BIN" "tauri-bin/${{ matrix.artifact }}"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "target/${{ matrix.target }}/release/mat-tauri-app.exe" "tauri-bin/mat-desktop-windows-x64.exe"
+          else
+            cp "target/${{ matrix.target }}"/release/bundle/appimage/*.AppImage tauri-bin/ 2>/dev/null || true
+            cp "target/${{ matrix.target }}"/release/bundle/deb/*.deb tauri-bin/ 2>/dev/null || true
+            cp "target/${{ matrix.target }}"/release/bundle/dmg/*.dmg tauri-bin/ 2>/dev/null || true
+          fi
           ls -lh tauri-bin/
 
-      - name: Upload Tauri binary
+      - name: Upload Tauri bundles
         uses: actions/upload-artifact@v4
         with:
-          name: tauri-bin-${{ matrix.os }}
+          name: tauri-bin-${{ matrix.label }}
           path: tauri-bin/*
 
   # ────────────────── 发布 Release ──────────────────

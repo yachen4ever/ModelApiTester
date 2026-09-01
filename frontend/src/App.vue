@@ -233,6 +233,7 @@ onMounted(() => {
       v-model:context-enabled="contextEnabled"
       :form-data="formData"
       :t="t"
+      :current-lang="currentLang"
       @send-complete="onSendComplete"
       @clear-chat="clearCurrentChat"
     />

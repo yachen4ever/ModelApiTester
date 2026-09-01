@@ -2111,7 +2111,7 @@ dependencies = [
 
 [[package]]
 name = "mat-core"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "rusqlite",
  "serde",
@@ -2120,7 +2120,7 @@ dependencies = [
 
 [[package]]
 name = "mat-http-server"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "axum",
  "clap",
@@ -2135,7 +2135,7 @@ dependencies = [
 
 [[package]]
 name = "mat-tauri-app"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "dirs-next",
  "mat-core",

@@ -28,6 +28,12 @@ export function tryGetHost(url) {
   try { return new URL(url).host; } catch(e) { return url; }
 }
 
+// 提取纯主机名（不含端口、不含路径），如 https://openrouter.ai/api/ → openrouter.ai
+// http://192.168.5.2:11234/v1 → 192.168.5.2
+export function tryGetHostname(url) {
+  try { return new URL(url).hostname; } catch(e) { return url; }
+}
+
 export function detectApiType(baseUrl, model, endpoint) {
   const u = (baseUrl || '').toLowerCase();
   const m = (model || '').toLowerCase();
