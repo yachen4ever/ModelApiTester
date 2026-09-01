@@ -4,6 +4,26 @@ All notable changes to this project. Dates are in CST (UTC+8).
 
 ---
 
+## [v0.5.7] — 2026-09-02
+
+### Bug Fixes
+- **修复窄窗口布局不响应** — 窗口缩小时三栏固定宽度导致右侧内容区空白；
+  新增 <1024px 自动折叠侧栏：左右侧栏隐藏并改为浮动面板（左下角两个圆钮打开），
+  宽屏保持原有三栏布局
+- **修复 About 页版本号重复 v** — 显示 `vv0.5.6`（模板写死 `v` 前缀 + 后端返回 tag 自带 `v`）；
+  统一归一化去掉 `v` 前缀
+- **修复"去更新"按钮无反应** — WebView 内 `window.open` 无法唤起系统浏览器；
+  改用 Rust 端 `webbrowser` crate 打开系统默认浏览器，GitHub/更新日志/致谢链接同步修复
+
+### Technical
+- `frontend/src/App.vue` — 窄屏折叠侧栏 + Teleport 浮层 + 浮动圆钮
+- `frontend/src/components/AboutDialog.vue` — `normVersion()` 去 `v` 前缀、`openExternal()` 调 Rust 打开浏览器
+- `crates/tauri-app/src/lib.rs` — 新增 `open_browser` command（`webbrowser::open`）
+- `crates/tauri-app/Cargo.toml` — 新增 `webbrowser = "1"` 依赖
+- `docs/screenshot_en.png` — 更新为英文界面真实截图
+
+---
+
 ## [v0.5.6] — 2026-09-01
 
 ### Bug Fixes
