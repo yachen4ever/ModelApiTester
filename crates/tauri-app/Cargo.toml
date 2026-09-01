@@ -16,6 +16,7 @@ rusqlite = { workspace = true }
 dirs-next = "2"
 reqwest = { workspace = true }
 tokio = { workspace = true }
+webbrowser = "1"
 
 [features]
 default = ["custom-protocol"]

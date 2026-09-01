@@ -8,6 +8,13 @@ use tokio::sync::Mutex as AsyncMutex;
 
 struct DbState(AsyncMutex<Database>);
 
+/// 在系统默认浏览器中打开外部链接（Tauri 桌面端）
+/// WebView 内 window.open 无法唤起系统浏览器，需要走原生侧
+#[tauri::command]
+async fn open_browser(url: String) -> Result<(), String> {
+    webbrowser::open(&url).map_err(|e| format!("打开浏览器失败: {}", e))
+}
+
 /// 前端通过 invoke('api_request', { path, method, body }) 调用
 /// path 格式: "api/conversations", "api/conversations/5", "api/messages" 等
 /// 这与 Web 版的 REST API 路径一一对应
@@ -172,7 +179,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(DbState(AsyncMutex::new(db)))
-        .invoke_handler(tauri::generate_handler![api_request])
+        .invoke_handler(tauri::generate_handler![api_request, open_browser])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

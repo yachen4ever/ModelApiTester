@@ -26,9 +26,41 @@ function toggleTheme() {
 // ── 抽屉 ──
 const leftDrawerCollapsed = ref(false);
 const rightDrawerCollapsed = ref(false);
+// 窄窗口（<1024px）自动折叠两侧栏；浮层模式手动展开
+const isNarrow = ref(false);
+const leftOverlayOpen = ref(false);
+const rightOverlayOpen = ref(false);
 
-function toggleLeftDrawer() { leftDrawerCollapsed.value = !leftDrawerCollapsed.value; }
-function toggleRightDrawer() { rightDrawerCollapsed.value = !rightDrawerCollapsed.value; }
+function toggleLeftDrawer() {
+  if (isNarrow.value) {
+    leftOverlayOpen.value = !leftOverlayOpen.value;
+    rightOverlayOpen.value = false;
+    return;
+  }
+  leftDrawerCollapsed.value = !leftDrawerCollapsed.value;
+}
+function toggleRightDrawer() {
+  if (isNarrow.value) {
+    rightOverlayOpen.value = !rightOverlayOpen.value;
+    leftOverlayOpen.value = false;
+    return;
+  }
+  rightDrawerCollapsed.value = !rightDrawerCollapsed.value;
+}
+
+function onResize() {
+  isNarrow.value = window.innerWidth < 1024;
+  if (!isNarrow.value) {
+    leftOverlayOpen.value = false;
+    rightOverlayOpen.value = false;
+  }
+}
+
+// 切换会话后自动关闭窄屏浮层
+function closeOverlays() {
+  leftOverlayOpen.value = false;
+  rightOverlayOpen.value = false;
+}
 
 // ── 会话 ──
 const conversations = ref([]);
@@ -178,6 +210,8 @@ async function init() {
 onMounted(() => {
   applyTheme(currentTheme.value);
   document.documentElement.lang = currentLang.value === 'zh' ? 'zh' : 'en';
+  window.addEventListener('resize', onResize);
+  onResize();
   init();
 });
 </script>
@@ -212,8 +246,11 @@ onMounted(() => {
 
   <!-- 主体 -->
   <div class="flex flex-1 overflow-hidden">
-    <!-- 左抽屉：对话列表 -->
-    <div :class="['drawer-pane w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col', leftDrawerCollapsed ? 'collapsed' : '']">
+    <!-- 左抽屉：对话列表（窄窗口自动折叠为浮层） -->
+    <div
+      v-if="!isNarrow"
+      :class="['drawer-pane w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col', leftDrawerCollapsed ? 'collapsed' : '']"
+    >
       <ConversationList
         :conversations="conversations"
         :current-conv-id="currentConvId"
@@ -238,11 +275,70 @@ onMounted(() => {
       @clear-chat="clearCurrentChat"
     />
 
-    <!-- 右抽屉：模型配置 -->
-    <div :class="['drawer-pane w-72 shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4', rightDrawerCollapsed ? 'collapsed' : '']">
+    <!-- 右抽屉：模型配置（窄屏折叠为悬浮按钮） -->
+    <div
+      v-if="!isNarrow"
+      :class="['drawer-pane w-72 shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4', rightDrawerCollapsed ? 'collapsed' : '']"
+    >
       <ModelConfig ref="modelConfigRef" :t="t" @config-applied="onConfigApplied" />
     </div>
   </div>
+
+  <!-- 窄屏浮层：左侧会话列表 -->
+  <Teleport to="body">
+    <div v-if="isNarrow && leftOverlayOpen" class="fixed inset-0 z-50" @click="leftOverlayOpen = false">
+      <div class="absolute inset-0 bg-black/40" @click="leftOverlayOpen = false"></div>
+      <div class="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-800 shadow-2xl z-10 flex flex-col" @click.stop>
+        <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ t('conversation_list') }}</span>
+          <button @click="leftOverlayOpen = false" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400">
+            <i class="fas fa-xmark w-4 text-center"></i>
+          </button>
+        </div>
+        <ConversationList
+          :conversations="conversations"
+          :current-conv-id="currentConvId"
+          :t="t"
+          @select="(id) => { loadConversation(id); closeOverlays(); }"
+          @new="newConversation"
+          @clear-all="clearAllConversations"
+          @delete="deleteConversation"
+        />
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- 窄屏浮层：右侧模型配置 -->
+  <Teleport to="body">
+    <div v-if="isNarrow && rightOverlayOpen" class="fixed inset-0 z-50" @click="rightOverlayOpen = false">
+      <div class="absolute inset-0 bg-black/40" @click="rightOverlayOpen = false"></div>
+      <div class="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 shadow-2xl z-10 overflow-y-auto p-4" @click.stop>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ t('api_type') }}</span>
+          <button @click="rightOverlayOpen = false" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400">
+            <i class="fas fa-xmark w-4 text-center"></i>
+          </button>
+        </div>
+        <ModelConfig ref="modelConfigRef" :t="t" @config-applied="onConfigApplied" />
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- 窄屏右下角浮动按钮 -->
+  <Teleport to="body">
+    <div v-if="isNarrow" class="fixed right-3 bottom-20 z-40 flex gap-2">
+      <button @click="toggleLeftDrawer"
+        class="w-11 h-11 rounded-full bg-gray-700 dark:bg-gray-600 text-white shadow-lg flex items-center justify-center hover:bg-gray-600 dark:hover:bg-gray-500 transition"
+        :title="t('conversation_list')">
+        <i class="fas fa-list w-4 text-center"></i>
+      </button>
+      <button @click="toggleRightDrawer"
+        class="w-11 h-11 rounded-full bg-indigo-500 text-white shadow-lg flex items-center justify-center hover:bg-indigo-600 transition"
+        :title="t('api_type')">
+        <i class="fas fa-cog w-4 text-center"></i>
+      </button>
+    </div>
+  </Teleport>
 
   <!-- About 对话框 -->
   <AboutDialog :visible="showAbout" :version="version" :t="t" @close="showAbout = false" />

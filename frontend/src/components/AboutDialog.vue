@@ -16,13 +16,18 @@ const latestVersion = ref('');
 const updateUrl = ref('');
 const checkError = ref('');
 
+// 统一去 v 前缀，避免显示 vv0.5.6
+function normVersion(v) {
+  return (v || '').replace(/^v/i, '');
+}
+
 async function checkUpdate() {
   updateState.value = 'checking';
   try {
     const res = await api('api/check-update');
     if (res.available && res.has_update) {
       updateState.value = 'outdated';
-      latestVersion.value = res.latest_version || '';
+      latestVersion.value = normVersion(res.latest_version);
       updateUrl.value = res.html_url || 'https://github.com/yachen4ever/ModelApiTester/releases';
     } else if (res.available) {
       updateState.value = 'current';
@@ -36,8 +41,23 @@ async function checkUpdate() {
   }
 }
 
+// 打开外部链接：Tauri 走原生 open_browser（系统默认浏览器），Web 用 window.open
+async function openExternal(url) {
+  const isTauri = typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined;
+  if (isTauri) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('open_browser', { url });
+      return;
+    } catch (e) {
+      // invoke 失败则 fallback
+    }
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
 function openUpdateUrl() {
-  window.open(updateUrl.value, '_blank', 'noopener');
+  openExternal(updateUrl.value);
 }
 
 watch(
@@ -103,17 +123,17 @@ defineExpose({ checkUpdate });
           </div>
         </div>
 
-        <!-- 链接区 -->
+<!-- 链接区 -->
         <div class="mt-4 flex flex-col gap-1">
-          <a :href="'https://github.com/yachen4ever/ModelApiTester'" target="_blank" rel="noopener" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition">
+          <a href="#" @click.prevent="openExternal('https://github.com/yachen4ever/ModelApiTester')" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition">
             <i class="fab fa-github w-4 text-center text-gray-500"></i> GitHub
             <i class="fas fa-arrow-up-right-from-square ml-auto text-[10px] text-gray-400"></i>
           </a>
-          <a :href="'https://github.com/yachen4ever/ModelApiTester/blob/main/CHANGELOG.md'" target="_blank" rel="noopener" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+          <a href="#" @click.prevent="openExternal('https://github.com/yachen4ever/ModelApiTester/blob/main/CHANGELOG.md')" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition">
             <i class="fas fa-file-lines w-4 text-center text-gray-500"></i> {{ t('about_changelog') }}
             <i class="fas fa-arrow-up-right-from-square ml-auto text-[10px] text-gray-400"></i>
           </a>
-          <a :href="'https://github.com/RunningFelix/openai-api-tester'" target="_blank" rel="noopener" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+          <a href="#" @click.prevent="openExternal('https://github.com/RunningFelix/openai-api-tester')" class="flex items-center gap-2.5 px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition">
             <i class="fas fa-heart text-gray-500 text-center w-4"></i> {{ t('about_credits') }}
             <i class="fas fa-arrow-up-right-from-square ml-auto text-[10px] text-gray-400"></i>
           </a>
